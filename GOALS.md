@@ -86,7 +86,7 @@ actual minutes from A-1 onward so later estimates use history.
 
 - Dashboard is broken today (3 of 4 backend calls missing). Observed, not inferred.
 - No AI model is called anywhere in the script; it is pure text templating. Generation stays in Morrison1's Python side by design.
-- Folder is still named `MediaGen2025`; rename to `AiArtPromptBuilder` when no shell holds it.
+- Folder renamed to `AiArtPromptBuilder` (done 2026-09-11).
 - Sheet has 1,173 values with no schema validation; imports can silently drift.
 
 ## ▶️ Current Cursor
