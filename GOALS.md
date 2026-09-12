@@ -37,7 +37,7 @@ Classification: `COMMITTED GOAL` (Erik, 2026-09-11: "I'm going to resurrect it n
 |---|---|---|---|
 | Dashboard `google.script.run` calls with a matching backend function | leading | 4 of 4 | 4 of 4 |
 | Vocabulary values reachable via API | lagging | 1,173 (live) | 1,173+ |
-| Video-layer categories | leading | 0 | 5 |
+| Video-layer categories | leading | 6 defined, 0 seeded in sheet | 6 |
 | Morrison1 stills generated from Prompt Builder prompts | lagging | 0 | 1, then daily |
 | Creative tools installed | leading | 4 of 4 (DaVinci 21.1 installed 2026-09-11; external scripting toggle pending) | 4 of 4 |
 
@@ -48,7 +48,7 @@ Classification: `COMMITTED GOAL` (Erik, 2026-09-11: "I'm going to resurrect it n
 | M0 | Repo under clasp + git, code and sheet fully mapped | done 2026-09-11 (ad784dc) | ✅ verified |
 | M1 | Dashboard repaired: `getDashboardData`, `savePromptToLog`, `exportPromptToDrive` implemented; version strings aligned to 5.2.0; live tab names resolved via `SHEET_ALIASES`; pushed via clasp (tags v5.2.0-push1/push2, remote updateTime 2026-09-12T02:54Z) | Tool works again | ✅ verified: Erik clicked through the dashboard 2026-09-11; API read of live categories confirms the resolver |
 | M2 | Agent API: `Api.js` `doGet`/`doPost` (health, categories, prompt with formats); deployed @2 as web app, ANYONE_ANONYMOUS, optional `PROMPT_API_TOKEN` script property; live-verified with curl 2026-09-12 03:03Z | Agents can call it | ✅ verified |
-| M3 | Video data model: new `Video` tab + categories; `generateMultiFormatPrompts` gains a video format | Prompts describe motion | ⬜ blocked on M1 |
+| M3 | Video layer: `Video.js` seed migration (menu 🎥 Setup Video Tab), `generateVideoFormat` text + JSON, API `video` section (api2 @3), live-verified prompt 2026-09-12 03:05Z | Prompts describe motion | 🟡 code live; Video tab seeding needs one menu click |
 | M4 | Morrison1 integration: `species_catalog.py` fetches its Codex-still prompt from M2 | Two projects joined | ⬜ blocked on M2 |
 | M5 | Tool hooks: `tools/davinci_smoke.py` (exits 3 until Resolve installed), `tools/blender_smoke.py` (rendered 640x360 PNG, 128 KB, verified) | Post-production is scriptable | 🟡 Blender verified; DaVinci awaits install |
 
@@ -99,7 +99,7 @@ https://script.google.com/macros/s/AKfycbyCjig1ociubkgrGw5P814n3aX1pQvzM4N5erySJ
 ## ▶️ Current Cursor
 
 - Active goal: G3
-- Current milestone: M3 (video data model, READY) and M4 (Morrison1 integration, READY now that M2 is live)
-- A-1: run the `seedVideoCategories()` migration from docs/VIDEO_DATA_MODEL.md to add the Video tab, then add a `video` format to the API
+- Current milestone: M3 (one click from done) → M4
+- A-1: Erik: Sheet menu 🎨 AI Prompt Builder → 🎥 Setup Video Tab (idempotent). Then M4: Morrison1 `species_catalog.py` fetches its Codex-still prompt from the API. DELIBERATELY DEFERRED past 2026-09-12 11:05 so the first unattended Morrison1 run is observed on today's fixes alone.
 - Blockers: DaVinci external scripting must be set to Local in Resolve Preferences (one UI click) before tools/davinci_smoke.py can pass
 - Next review: after M1 push, or at the next session start
