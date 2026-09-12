@@ -35,19 +35,19 @@ Classification: `COMMITTED GOAL` (Erik, 2026-09-11: "I'm going to resurrect it n
 
 | KPI | Type | Now | Target |
 |---|---|---|---|
-| Dashboard `google.script.run` calls with a matching backend function | leading | 1 of 4 | 4 of 4 |
-| Vocabulary values reachable via API | lagging | 0 | 1,173+ |
+| Dashboard `google.script.run` calls with a matching backend function | leading | 4 of 4 | 4 of 4 |
+| Vocabulary values reachable via API | lagging | 1,173 (live) | 1,173+ |
 | Video-layer categories | leading | 0 | 5 |
 | Morrison1 stills generated from Prompt Builder prompts | lagging | 0 | 1, then daily |
-| Creative tools installed | leading | 3 of 4 (DaVinci pending Erik) | 4 of 4 |
+| Creative tools installed | leading | 4 of 4 (DaVinci 21.1 installed 2026-09-11; external scripting toggle pending) | 4 of 4 |
 
 ## 🪜 Milestones
 
 | # | Milestone | State change | Status |
 |---|---|---|---|
 | M0 | Repo under clasp + git, code and sheet fully mapped | done 2026-09-11 (ad784dc) | ✅ verified |
-| M1 | Dashboard repaired: `getDashboardData`, `savePromptToLog`, `exportPromptToDrive` implemented; version strings aligned to 5.2.0; live tab names resolved via `SHEET_ALIASES`; pushed via clasp (tags v5.2.0-push1/push2, remote updateTime 2026-09-12T02:54Z) | Tool works again | 🟡 pushed, live click-through pending |
-| M2 | Agent API: `doGet`/`doPost` returning JSON prompts; deployed as web app; documented curl example | Agents can call it | ⬜ blocked on M1 |
+| M1 | Dashboard repaired: `getDashboardData`, `savePromptToLog`, `exportPromptToDrive` implemented; version strings aligned to 5.2.0; live tab names resolved via `SHEET_ALIASES`; pushed via clasp (tags v5.2.0-push1/push2, remote updateTime 2026-09-12T02:54Z) | Tool works again | ✅ verified: Erik clicked through the dashboard 2026-09-11; API read of live categories confirms the resolver |
+| M2 | Agent API: `Api.js` `doGet`/`doPost` (health, categories, prompt with formats); deployed @2 as web app, ANYONE_ANONYMOUS, optional `PROMPT_API_TOKEN` script property; live-verified with curl 2026-09-12 03:03Z | Agents can call it | ✅ verified |
 | M3 | Video data model: new `Video` tab + categories; `generateMultiFormatPrompts` gains a video format | Prompts describe motion | ⬜ blocked on M1 |
 | M4 | Morrison1 integration: `species_catalog.py` fetches its Codex-still prompt from M2 | Two projects joined | ⬜ blocked on M2 |
 | M5 | Tool hooks: `tools/davinci_smoke.py` (exits 3 until Resolve installed), `tools/blender_smoke.py` (rendered 640x360 PNG, 128 KB, verified) | Post-production is scriptable | 🟡 Blender verified; DaVinci awaits install |
@@ -72,6 +72,13 @@ Big Three for the next session: A-1, A-2, A-3.
 Estimates are model estimates (no personal telemetry yet for this repo). Begin recording
 actual minutes from A-1 onward so later estimates use history.
 
+## 🌐 Live endpoint (M2)
+
+```
+https://script.google.com/macros/s/AKfycbyCjig1ociubkgrGw5P814n3aX1pQvzM4N5erySJWTJijL2oQW9ZfBZDUvwohLxHmyjNw/exec
+```
+`?action=health` · `?action=categories&section=character|scene|camera` · `?action=prompt&character.Gender=Male&scene.Lighting=Volumetric&camera.Shot%20Type=Wide%20Shot&formats=true` · POST `{action, selections, formats, token}`
+
 ## 🔌 Execution Routing
 
 | Work | Owner |
@@ -92,7 +99,7 @@ actual minutes from A-1 onward so later estimates use history.
 ## ▶️ Current Cursor
 
 - Active goal: G3
-- Current milestone: M1 (pushed, unverified live)
-- A-1: open the Sheet, menu 🎨 AI Prompt Builder → Open Interactive Dashboard, confirm dropdowns populate for all three sections and Log/Export buttons succeed; then M2 (web-app endpoint)
-- Blockers: live click-through needs a human in the Sheet UI; DaVinci installer download in progress via Playwright
+- Current milestone: M3 (video data model, READY) and M4 (Morrison1 integration, READY now that M2 is live)
+- A-1: run the `seedVideoCategories()` migration from docs/VIDEO_DATA_MODEL.md to add the Video tab, then add a `video` format to the API
+- Blockers: DaVinci external scripting must be set to Local in Resolve Preferences (one UI click) before tools/davinci_smoke.py can pass
 - Next review: after M1 push, or at the next session start
