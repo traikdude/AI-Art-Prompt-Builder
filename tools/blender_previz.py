@@ -206,7 +206,8 @@ def main() -> None:
     out_dir = os.path.join(tools_dir, "out")
     os.makedirs(out_dir, exist_ok=True)
     tag = norm(spec.get("shot")).replace(" ", "_").replace("/", "-") or "default"
-    out_path = args.out or os.path.join(out_dir, f"previz_{tag}.mp4")
+    # Blender resolves relative paths against the .blend location (none in --background => drive root)
+    out_path = os.path.abspath(args.out or os.path.join(out_dir, f"previz_{tag}.mp4"))
 
     resolved = build_scene(bpy, spec)
     print("PREVIZ PARAMS:", json.dumps(resolved))
