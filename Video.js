@@ -18,7 +18,9 @@ const VIDEO_SEED_CATEGORIES = {
     'Motion Blur', 'Freeze Frame'],
   'Transition': ['Cut', 'Match Cut', 'Cross Dissolve', 'Whip Pan', 'Push Through', 'Fade to Black',
     'Fade from Black', 'J-Cut', 'L-Cut', 'Smash Cut'],
-  'Sequence Role': ['Establishing', 'Action', 'Reaction', 'Handoff']
+  'Sequence Role': ['Establishing', 'Action', 'Reaction', 'Handoff'],
+  // Adopted 2026-09-11 from the 28-field shot schema (docs/VIDEO_SCHEMA_DECISION_2026-09-11.md); values verbatim from the Shots tab
+  'Composition': ['Centered', 'Off-center', 'Rule of thirds', 'Framed through doorway', 'Silhouette', 'In motion blur', 'Foreground obstruction', 'Depth of field']
 };
 
 /**
@@ -98,6 +100,7 @@ function generateVideoFormat(selections) {
       motion_intensity: pick('video', 'Motion Intensity'),
       transition: pick('video', 'Transition'),
       sequence_role: pick('video', 'Sequence Role'),
+      composition: pick('video', 'Composition') || null,
       negative: pick('video', 'Negative') || null,
       seed_hint: pick('video', 'Seed Hint') || null
     }
