@@ -423,7 +423,7 @@ function executeImportFromRawData(targetSheet) {
     stageDataInImportDB(importDbSheet, formattedData);
 
     // Get target sheet 🎯
-    const targetSheetObj = ss.getSheetByName(dbSheetName);
+    const targetSheetObj = getSheetByAnyName(ss, dbSheetName);
     if (!targetSheetObj) {
       return {
         success: false,
@@ -702,7 +702,14 @@ function appendValuesToCategoryColumns(sheet, newRows) {
  * 🔎 Resolves a logical sheet name through CONFIG.SHEET_ALIASES (first existing tab wins).
  */
 function getSheetByAnyName(ss, logicalName) {
-  const candidates = (CONFIG.SHEET_ALIASES && CONFIG.SHEET_ALIASES[logicalName]) || [logicalName];
+  const wanted = String(logicalName || '').trim();
+  let candidates = [wanted];
+  const groups = CONFIG.SHEET_ALIASES || {};
+  Object.keys(groups).forEach(function (key) {
+    const group = groups[key];
+    const hit = group.some(function (n) { return n.toLowerCase() === wanted.toLowerCase(); });
+    if (hit) candidates = candidates.concat(group);
+  });
   for (let i = 0; i < candidates.length; i++) {
     const sheet = ss.getSheetByName(candidates[i]);
     if (sheet) return sheet;
