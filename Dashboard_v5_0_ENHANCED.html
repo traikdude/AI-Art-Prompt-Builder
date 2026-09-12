@@ -1,0 +1,779 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🎨 AI Art Prompt Builder Dashboard v5.1.1</title>
+    <style>
+        /* 🎨✨ ENHANCED MODERN DESIGN SYSTEM V5.1.1 🌈💫 */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            /* 🌈 Color Palette */
+            --primary: #667eea;
+            --secondary: #764ba2;
+            --success: #10b981;
+            --danger: #ef4444;
+            --warning: #f59e0b;
+            --info: #3b82f6;
+            --dark: #1f2937;
+            --light: #f3f4f6;
+            --white: #ffffff;
+            
+            /* 📐 Spacing */
+            --spacing-xs: 0.25rem;
+            --spacing-sm: 0.5rem;
+            --spacing-md: 1rem;
+            --spacing-lg: 1.5rem;
+            --spacing-xl: 2rem;
+            
+            /* 🎨 Shadows */
+            --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.1);
+            --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.1);
+            --shadow-lg: 0 10px 15px rgba(0, 0, 0, 0.1);
+            
+            /* 📏 Border Radius */
+            --radius-sm: 0.375rem;
+            --radius-md: 0.5rem;
+            --radius-lg: 0.75rem;
+            --radius-xl: 1rem;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: var(--spacing-lg);
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: var(--white);
+            border-radius: var(--radius-xl);
+            box-shadow: var(--shadow-lg);
+            overflow: hidden;
+        }
+
+        /* 🎯 Header Styles */
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: var(--white);
+            padding: var(--spacing-xl);
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            font-weight: 700;
+            margin-bottom: var(--spacing-sm);
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.2);
+        }
+
+        .header p {
+            font-size: 1.1rem;
+            opacity: 0.9;
+        }
+
+        /* 🎛️ Controls Bar */
+        .controls {
+            background: var(--light);
+            padding: var(--spacing-lg);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: var(--spacing-md);
+            border-bottom: 2px solid #e5e7eb;
+        }
+
+        .button-group {
+            display: flex;
+            gap: var(--spacing-sm);
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            padding: var(--spacing-sm) var(--spacing-lg);
+            border: none;
+            border-radius: var(--radius-md);
+            font-size: 0.95rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: var(--spacing-sm);
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: var(--white);
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-md);
+        }
+
+        .btn-success {
+            background: var(--success);
+            color: var(--white);
+        }
+
+        .btn-warning {
+            background: var(--warning);
+            color: var(--white);
+        }
+
+        .btn-info {
+            background: var(--info);
+            color: var(--white);
+        }
+
+        .btn-danger {
+            background: var(--danger);
+            color: var(--white);
+        }
+
+        /* 📊 Main Content Grid */
+        .content {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: var(--spacing-lg);
+            padding: var(--spacing-xl);
+        }
+
+        .section-card {
+            background: var(--white);
+            border: 2px solid #e5e7eb;
+            border-radius: var(--radius-lg);
+            padding: var(--spacing-lg);
+            transition: all 0.3s ease;
+        }
+
+        .section-card:hover {
+            border-color: var(--primary);
+            box-shadow: var(--shadow-md);
+            transform: translateY(-4px);
+        }
+
+        .section-header {
+            display: flex;
+            align-items: center;
+            gap: var(--spacing-sm);
+            margin-bottom: var(--spacing-lg);
+            padding-bottom: var(--spacing-md);
+            border-bottom: 2px solid var(--light);
+        }
+
+        .section-header h2 {
+            font-size: 1.5rem;
+            color: var(--dark);
+        }
+
+        .section-icon {
+            font-size: 2rem;
+        }
+
+        /* 🎨 Category Selection */
+        .category-group {
+            margin-bottom: var(--spacing-lg);
+        }
+
+        .category-label {
+            display: block;
+            font-weight: 600;
+            color: var(--dark);
+            margin-bottom: var(--spacing-sm);
+            font-size: 0.95rem;
+        }
+
+        .select-wrapper {
+            position: relative;
+        }
+
+        .category-select {
+            width: 100%;
+            padding: var(--spacing-md);
+            border: 2px solid #e5e7eb;
+            border-radius: var(--radius-md);
+            font-size: 1rem;
+            background: var(--white);
+            cursor: pointer;
+            transition: all 0.3s ease;
+            appearance: none;
+        }
+
+        .category-select:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        .category-select:hover {
+            border-color: var(--primary);
+        }
+
+        .select-wrapper::after {
+            content: '▼';
+            position: absolute;
+            right: 1rem;
+            top: 50%;
+            transform: translateY(-50%);
+            pointer-events: none;
+            color: var(--primary);
+        }
+
+        /* ✨ Prompt Output Area */
+        .prompt-output {
+            background: var(--light);
+            padding: var(--spacing-xl);
+            border-radius: var(--radius-lg);
+            margin-top: var(--spacing-xl);
+        }
+
+        .prompt-display {
+            background: var(--white);
+            padding: var(--spacing-lg);
+            border-radius: var(--radius-md);
+            border: 2px solid #e5e7eb;
+            min-height: 150px;
+            font-family: 'Courier New', monospace;
+            font-size: 1rem;
+            line-height: 1.6;
+            color: var(--dark);
+            white-space: pre-wrap;
+            word-wrap: break-word;
+        }
+
+        .prompt-actions {
+            display: flex;
+            gap: var(--spacing-sm);
+            margin-top: var(--spacing-md);
+            flex-wrap: wrap;
+        }
+
+        /* 📊 Statistics Panel */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: var(--spacing-md);
+            margin-top: var(--spacing-lg);
+        }
+
+        .stat-card {
+            background: var(--white);
+            padding: var(--spacing-md);
+            border-radius: var(--radius-md);
+            border: 2px solid #e5e7eb;
+            text-align: center;
+        }
+
+        .stat-value {
+            font-size: 2rem;
+            font-weight: 700;
+            color: var(--primary);
+        }
+
+        .stat-label {
+            font-size: 0.875rem;
+            color: #6b7280;
+            margin-top: var(--spacing-xs);
+        }
+
+        /* 🔄 Loading & Status */
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            border-top-color: var(--white);
+            animation: spin 1s ease-in-out infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .status-message {
+            padding: var(--spacing-md);
+            border-radius: var(--radius-md);
+            margin-top: var(--spacing-md);
+            display: none;
+        }
+
+        .status-success {
+            background: #d1fae5;
+            color: #065f46;
+            border: 1px solid #10b981;
+        }
+
+        .status-error {
+            background: #fee2e2;
+            color: #991b1b;
+            border: 1px solid #ef4444;
+        }
+
+        .status-info {
+            background: #dbeafe;
+            color: #1e40af;
+            border: 1px solid #3b82f6;
+        }
+
+        /* 📱 Responsive Design */
+        @media (max-width: 768px) {
+            .content {
+                grid-template-columns: 1fr;
+            }
+            
+            .controls {
+                flex-direction: column;
+                align-items: stretch;
+            }
+            
+            .button-group {
+                flex-direction: column;
+            }
+            
+            .btn {
+                width: 100%;
+                justify-content: center;
+            }
+        }
+
+        /* 🎯 Accessibility */
+        .sr-only {
+            position: absolute;
+            width: 1px;
+            height: 1px;
+            padding: 0;
+            margin: -1px;
+            overflow: hidden;
+            clip: rect(0, 0, 0, 0);
+            white-space: nowrap;
+            border-width: 0;
+        }
+
+        /* 🎨 Selection Counter */
+        .selection-counter {
+            font-size: 0.875rem;
+            color: #6b7280;
+            margin-top: var(--spacing-xs);
+        }
+
+        .counter-badge {
+            display: inline-block;
+            padding: 2px 8px;
+            background: var(--primary);
+            color: var(--white);
+            border-radius: 12px;
+            font-weight: 600;
+            margin-left: var(--spacing-xs);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- 🎯 Header Section -->
+        <div class="header">
+            <h1>🎨✨ AI Art Prompt Builder v5.1.1</h1>
+            <p>Create Professional AI Art Prompts with Interactive Category Selection</p>
+        </div>
+
+        <!-- 🎛️ Controls Bar -->
+        <div class="controls">
+            <div class="button-group">
+                <button class="btn btn-primary" onclick="generatePrompt()">
+                    🎨 Generate Prompt
+                </button>
+                <button class="btn btn-success" onclick="copyToClipboard()">
+                    📋 Copy Prompt
+                </button>
+                <button class="btn btn-info" onclick="saveToLog()">
+                    💾 Save to Log
+                </button>
+            </div>
+            
+            <div class="button-group">
+                <button class="btn btn-warning" onclick="clearSelections()">
+                    🔄 Clear All
+                </button>
+                <button class="btn btn-info" onclick="refreshCategories()">
+                    ↻ Refresh
+                </button>
+                <button class="btn btn-danger" onclick="showHelp()">
+                    ❓ Help
+                </button>
+            </div>
+        </div>
+
+        <!-- 📊 Main Content Grid -->
+        <div class="content">
+            <!-- 👤 Character Section -->
+            <div class="section-card">
+                <div class="section-header">
+                    <span class="section-icon">👤</span>
+                    <h2>Character Design</h2>
+                </div>
+                <div id="character-categories">
+                    <p style="color: #6b7280;">Loading categories...</p>
+                </div>
+                <div class="selection-counter">
+                    <span>Selected: <span class="counter-badge" id="character-count">0</span></span>
+                </div>
+            </div>
+
+            <!-- 🎬 Scene Section -->
+            <div class="section-card">
+                <div class="section-header">
+                    <span class="section-icon">🎬</span>
+                    <h2>Scene Settings</h2>
+                </div>
+                <div id="scene-categories">
+                    <p style="color: #6b7280;">Loading categories...</p>
+                </div>
+                <div class="selection-counter">
+                    <span>Selected: <span class="counter-badge" id="scene-count">0</span></span>
+                </div>
+            </div>
+
+            <!-- 📸 Camera Section -->
+            <div class="section-card">
+                <div class="section-header">
+                    <span class="section-icon">📸</span>
+                    <h2>Camera & Composition</h2>
+                </div>
+                <div id="camera-categories">
+                    <p style="color: #6b7280;">Loading categories...</p>
+                </div>
+                <div class="selection-counter">
+                    <span>Selected: <span class="counter-badge" id="camera-count">0</span></span>
+                </div>
+            </div>
+        </div>
+
+        <!-- ✨ Prompt Output Area -->
+        <div class="prompt-output">
+            <h3 style="margin-bottom: var(--spacing-md); color: var(--dark);">
+                ✨ Generated Prompt
+            </h3>
+            <div class="prompt-display" id="prompt-display">
+                Your AI art prompt will appear here after you make selections and click "Generate Prompt"...
+            </div>
+            <div class="prompt-actions">
+                <button class="btn btn-success" onclick="copyToClipboard()">
+                    📋 Copy to Clipboard
+                </button>
+                <button class="btn btn-info" onclick="saveToLog()">
+                    💾 Save to Log
+                </button>
+                <button class="btn btn-primary" onclick="exportPrompt()">
+                    📤 Export
+                </button>
+            </div>
+            
+            <!-- Status Messages -->
+            <div id="status-message" class="status-message"></div>
+        </div>
+
+        <!-- 📊 Statistics Panel -->
+        <div class="prompt-output">
+            <h3 style="margin-bottom: var(--spacing-md); color: var(--dark);">
+                📊 Session Statistics
+            </h3>
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-value" id="total-prompts">0</div>
+                    <div class="stat-label">Total Prompts</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="character-selections">0</div>
+                    <div class="stat-label">Character Traits</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="scene-selections">0</div>
+                    <div class="stat-label">Scene Elements</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="camera-selections">0</div>
+                    <div class="stat-label">Camera Settings</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 🔧 JavaScript Logic -->
+    <script>
+        // 🎯 CORRECTED SHEET CONFIGURATION - MATCHES YOUR ACTUAL SHEET NAMES
+        const SHEET_CONFIG = {
+            CHARACTER: 'CHARACTER',  // ✅ Exact match
+            SCENE: 'SCENE',          // ✅ Exact match
+            CAMERA: 'CAMERA'         // ✅ Exact match
+        };
+
+        // 🎯 Global State Management
+        let categoriesData = {
+            character: {},
+            scene: {},
+            camera: {}
+        };
+        
+        let selections = {
+            character: {},
+            scene: {},
+            camera: {}
+        };
+        
+        let stats = {
+            totalPrompts: 0,
+            characterSelections: 0,
+            sceneSelections: 0,
+            cameraSelections: 0
+        };
+
+        // 🚀 Initialize Dashboard
+        window.onload = function() {
+            console.log('🎨 Initializing AI Art Prompt Builder Dashboard v5.1.1...');
+            console.log('📊 Sheet Configuration:', SHEET_CONFIG);
+            loadAllCategories();
+        };
+
+        // 📥 Load Categories from Backend
+        function loadAllCategories() {
+            showStatus('Loading categories from sheets: CHARACTER, SCENE, CAMERA...', 'info');
+            
+            google.script.run
+                .withSuccessHandler(function(data) {
+                    console.log('✅ Categories loaded:', data);
+                    categoriesData = data;
+                    renderAllCategories();
+                    showStatus('Categories loaded successfully!', 'success');
+                })
+                .withFailureHandler(function(error) {
+                    console.error('❌ Error loading categories:', error);
+                    showStatus('Error loading categories: ' + error.message, 'error');
+                })
+                .getDashboardData();
+        }
+
+        // 🎨 Render All Category Sections
+        function renderAllCategories() {
+            renderCategorySection('character', '👤');
+            renderCategorySection('scene', '🎬');
+            renderCategorySection('camera', '📸');
+            updateSelectionCounters();
+        }
+
+        // 🖼️ Render Individual Category Section
+        function renderCategorySection(section, icon) {
+            const container = document.getElementById(`${section}-categories`);
+            const categories = categoriesData[section];
+            
+            if (!categories || Object.keys(categories).length === 0) {
+                container.innerHTML = '<p style="color: #ef4444;">No categories available for ' + section.toUpperCase() + '</p>';
+                return;
+            }
+            
+            let html = '';
+            for (const [category, values] of Object.entries(categories)) {
+                html += `
+                    <div class="category-group">
+                        <label class="category-label">${icon} ${formatCategoryName(category)}</label>
+                        <div class="select-wrapper">
+                            <select class="category-select" 
+                                    id="${section}-${category}" 
+                                    onchange="handleSelection('${section}', '${category}', this.value)">
+                                <option value="">-- Select ${category} --</option>
+                                ${values.map(value => 
+                                    `<option value="${value}">${value}</option>`
+                                ).join('')}
+                            </select>
+                        </div>
+                    </div>
+                `;
+            }
+            
+            container.innerHTML = html;
+        }
+
+        // 🎯 Handle Selection Changes
+        function handleSelection(section, category, value) {
+            if (value) {
+                selections[section][category] = value;
+                stats[`${section}Selections`]++;
+            } else {
+                delete selections[section][category];
+            }
+            
+            updateSelectionCounters();
+            updateStats();
+        }
+
+        // 📊 Update Selection Counters
+        function updateSelectionCounters() {
+            document.getElementById('character-count').textContent = 
+                Object.keys(selections.character).length;
+            document.getElementById('scene-count').textContent = 
+                Object.keys(selections.scene).length;
+            document.getElementById('camera-count').textContent = 
+                Object.keys(selections.camera).length;
+        }
+
+        // 📊 Update Statistics Display
+        function updateStats() {
+            document.getElementById('total-prompts').textContent = stats.totalPrompts;
+            document.getElementById('character-selections').textContent = stats.characterSelections;
+            document.getElementById('scene-selections').textContent = stats.sceneSelections;
+            document.getElementById('camera-selections').textContent = stats.cameraSelections;
+        }
+
+        // 🎨 Generate Prompt
+        function generatePrompt() {
+            const characterParts = Object.values(selections.character);
+            const sceneParts = Object.values(selections.scene);
+            const cameraParts = Object.values(selections.camera);
+            
+            if (characterParts.length === 0 && sceneParts.length === 0 && cameraParts.length === 0) {
+                showStatus('Please make at least one selection before generating a prompt', 'error');
+                return;
+            }
+            
+            let prompt = '';
+            
+            if (characterParts.length > 0) {
+                prompt += '👤 Character: ' + characterParts.join(', ') + '. ';
+            }
+            
+            if (sceneParts.length > 0) {
+                prompt += '🎬 Scene: ' + sceneParts.join(', ') + '. ';
+            }
+            
+            if (cameraParts.length > 0) {
+                prompt += '📸 Camera: ' + cameraParts.join(', ') + '.';
+            }
+            
+            document.getElementById('prompt-display').textContent = prompt.trim();
+            stats.totalPrompts++;
+            updateStats();
+            showStatus('Prompt generated successfully!', 'success');
+        }
+
+        // 📋 Copy to Clipboard
+        function copyToClipboard() {
+            const promptText = document.getElementById('prompt-display').textContent;
+            
+            if (promptText.includes('will appear here')) {
+                showStatus('Generate a prompt first before copying', 'error');
+                return;
+            }
+            
+            navigator.clipboard.writeText(promptText)
+                .then(() => {
+                    showStatus('Prompt copied to clipboard!', 'success');
+                })
+                .catch(err => {
+                    showStatus('Failed to copy: ' + err.message, 'error');
+                });
+        }
+
+        // 💾 Save to Log
+        function saveToLog() {
+            const promptText = document.getElementById('prompt-display').textContent;
+            
+            if (promptText.includes('will appear here')) {
+                showStatus('Generate a prompt first before saving', 'error');
+                return;
+            }
+            
+            showStatus('Saving to log...', 'info');
+            
+            google.script.run
+                .withSuccessHandler(function(result) {
+                    showStatus('Prompt saved to log successfully!', 'success');
+                })
+                .withFailureHandler(function(error) {
+                    showStatus('Error saving to log: ' + error.message, 'error');
+                })
+                .savePromptToLog(promptText, selections);
+        }
+
+        // 🔄 Clear Selections
+        function clearSelections() {
+            selections = {
+                character: {},
+                scene: {},
+                camera: {}
+            };
+            
+            // Reset all dropdowns
+            document.querySelectorAll('.category-select').forEach(select => {
+                select.selectedIndex = 0;
+            });
+            
+            document.getElementById('prompt-display').textContent = 
+                'Your AI art prompt will appear here after you make selections and click "Generate Prompt"...';
+            
+            updateSelectionCounters();
+            showStatus('All selections cleared', 'info');
+        }
+
+        // ↻ Refresh Categories
+        function refreshCategories() {
+            showStatus('Refreshing categories from CHARACTER, SCENE, CAMERA sheets...', 'info');
+            loadAllCategories();
+        }
+
+        // 📤 Export Prompt
+        function exportPrompt() {
+            const promptText = document.getElementById('prompt-display').textContent;
+            
+            if (promptText.includes('will appear here')) {
+                showStatus('Generate a prompt first before exporting', 'error');
+                return;
+            }
+            
+            showStatus('Exporting prompt...', 'info');
+            
+            google.script.run
+                .withSuccessHandler(function(result) {
+                    showStatus('Prompt exported successfully!', 'success');
+                })
+                .withFailureHandler(function(error) {
+                    showStatus('Error exporting: ' + error.message, 'error');
+                })
+                .exportPromptToDrive(promptText, selections);
+        }
+
+        // ❓ Show Help
+        function showHelp() {
+            google.script.run.showHelp();
+        }
+
+        // 📢 Show Status Message
+        function showStatus(message, type) {
+            const statusDiv = document.getElementById('status-message');
+            statusDiv.textContent = message;
+            statusDiv.className = 'status-message status-' + type;
+            statusDiv.style.display = 'block';
+            
+            setTimeout(() => {
+                statusDiv.style.display = 'none';
+            }, 3000);
+        }
+
+        // 🔤 Format Category Names
+        function formatCategoryName(name) {
+            return name
+                .split('_')
+                .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+                .join(' ');
+        }
+    </script>
+</body>
+</html>
