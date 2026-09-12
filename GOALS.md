@@ -46,11 +46,11 @@ Classification: `COMMITTED GOAL` (Erik, 2026-09-11: "I'm going to resurrect it n
 | # | Milestone | State change | Status |
 |---|---|---|---|
 | M0 | Repo under clasp + git, code and sheet fully mapped | done 2026-09-11 (ad784dc) | ✅ verified |
-| M1 | Dashboard repaired: `getDashboardData`, `savePromptToLog`, `exportPromptToDrive` implemented; version strings aligned to 5.2.0; pushed via clasp; menu smoke-tested | Tool works again | ⬜ READY |
+| M1 | Dashboard repaired: `getDashboardData`, `savePromptToLog`, `exportPromptToDrive` implemented; version strings aligned to 5.2.0; live tab names resolved via `SHEET_ALIASES`; pushed via clasp (tags v5.2.0-push1/push2, remote updateTime 2026-09-12T02:54Z) | Tool works again | 🟡 pushed, live click-through pending |
 | M2 | Agent API: `doGet`/`doPost` returning JSON prompts; deployed as web app; documented curl example | Agents can call it | ⬜ blocked on M1 |
 | M3 | Video data model: new `Video` tab + categories; `generateMultiFormatPrompts` gains a video format | Prompts describe motion | ⬜ blocked on M1 |
 | M4 | Morrison1 integration: `species_catalog.py` fetches its Codex-still prompt from M2 | Two projects joined | ⬜ blocked on M2 |
-| M5 | Tool hooks: DaVinci Python API smoke script, Blender `bpy` smoke script, documented | Post-production is scriptable | ⬜ READY (independent) |
+| M5 | Tool hooks: `tools/davinci_smoke.py` (exits 3 until Resolve installed), `tools/blender_smoke.py` (rendered 640x360 PNG, 128 KB, verified) | Post-production is scriptable | 🟡 Blender verified; DaVinci awaits install |
 
 ## ✅ Priority Work
 
@@ -92,7 +92,7 @@ actual minutes from A-1 onward so later estimates use history.
 ## ▶️ Current Cursor
 
 - Active goal: G3
-- Current milestone: M1 (READY)
-- A-1: implement `getDashboardData`, `savePromptToLog`, `exportPromptToDrive` in Code.js, push, smoke-test
-- Blockers: none for A-1; DaVinci waits on Erik's download
+- Current milestone: M1 (pushed, unverified live)
+- A-1: open the Sheet, menu 🎨 AI Prompt Builder → Open Interactive Dashboard, confirm dropdowns populate for all three sections and Log/Export buttons succeed; then M2 (web-app endpoint)
+- Blockers: live click-through needs a human in the Sheet UI; DaVinci installer download in progress via Playwright
 - Next review: after M1 push, or at the next session start
