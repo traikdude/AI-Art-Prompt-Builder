@@ -11,9 +11,12 @@
  * ✅ Bulletproof import validation
  * ✅ Help system case handling
  * ✅ Alias system normalization
+ * ✅ 2026-09-11: Wired dashboard bridge functions (getDashboardData, savePromptToLog,
+ *    exportPromptToDrive) so every Dashboard_v5_0_ENHANCED.html button now has a
+ *    matching Code.js function
  *
  * Version: 5.2.0 ULTRA-DEBUGGED 🎯
- * Last Updated: 2025-11-19 ⏰
+ * Last Updated: 2026-09-11 ⏰
  * ═══════════════════════════════════════════════════════════════════════════
  */
 
@@ -24,16 +27,24 @@
 const CONFIG = {
   // Sheet Names - MUST MATCH YOUR ACTUAL GOOGLE SHEETS 📊
   SHEETS: {
-    CHARACTER: 'CHARACTER',
-    SCENE: 'SCENE',
-    CAMERA: 'CAMERA',
-    SHOTS: 'CAMERA',              // Backwards compatibility 🔄
+    CHARACTER: 'Character',       // live tab name (2026-09-11); legacy 'CHARACTER' resolved via SHEET_ALIASES
+    SCENE: 'Scene Settings',
+    CAMERA: 'Shots',
+    SHOTS: 'Shots',               // Backwards compatibility 🔄
     PROMPT_BUILDER: 'PROMPT_BUILDER',
     HELP: 'HELP_DB',
     ALIAS: 'ALIAS',
     RAW_AI_DATA: 'RAW_AI_DATA',
     IMPORT_DB: 'IMPORT_DB',
-    LOG: 'Selections Log'
+    LOG: 'History/Log'
+  },
+
+  // 🔄 Alternate tab names accepted for each logical sheet (first match wins)
+  SHEET_ALIASES: {
+    'Character': ['Character', 'CHARACTER'],
+    'Scene Settings': ['Scene Settings', 'SCENE', 'Scene'],
+    'Shots': ['Shots', 'CAMERA', 'Camera', 'SHOTS'],
+    'History/Log': ['History/Log', 'Selections Log']
   },
 
   // Section Keys - Normalized uppercase for consistency 🔤
@@ -687,6 +698,18 @@ function appendValuesToCategoryColumns(sheet, newRows) {
 /**
  * 🎯 Gets categories for a section (WITH CASE NORMALIZATION!)
  */
+/**
+ * 🔎 Resolves a logical sheet name through CONFIG.SHEET_ALIASES (first existing tab wins).
+ */
+function getSheetByAnyName(ss, logicalName) {
+  const candidates = (CONFIG.SHEET_ALIASES && CONFIG.SHEET_ALIASES[logicalName]) || [logicalName];
+  for (let i = 0; i < candidates.length; i++) {
+    const sheet = ss.getSheetByName(candidates[i]);
+    if (sheet) return sheet;
+  }
+  return null;
+}
+
 function getSectionCategories(section) {
   try {
     // 🛡️ NORMALIZE SECTION NAME
@@ -712,10 +735,10 @@ function getSectionCategories(section) {
 
     // Load from sheet 📊
     const ss = SpreadsheetApp.getActiveSpreadsheet();
-    const sheet = ss.getSheetByName(dbSheetName);
+    const sheet = getSheetByAnyName(ss, dbSheetName);
 
     if (!sheet) {
-      console.warn(`⚠️ Sheet "${dbSheetName}" not found for section ${normalizedSection}`);
+      console.warn(`⚠️ Sheet "${dbSheetName}" (or aliases) not found for section ${normalizedSection}`);
       return [];
     }
 
@@ -1155,6 +1178,90 @@ function saveMultiFormatToDrive(formats) {
     };
   } catch (error) {
     logError('saveMultiFormatToDrive', error);
+    return { success: false, message: error.message };
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// 🖥️ DASHBOARD BRIDGE FUNCTIONS - google.script.run ENTRYPOINTS
+// ═══════════════════════════════════════════════════════════════════════════
+
+/**
+ * 📊 Gets all dashboard category vocabularies (CHARACTER / SCENE / CAMERA)
+ * Shape expected by Dashboard_v5_0_ENHANCED.html: { character: {catName: [values]}, scene: {...}, camera: {...} }
+ */
+function getDashboardData() {
+  try {
+    const sections = ['CHARACTER', 'SCENE', 'CAMERA'];
+    const data = { character: {}, scene: {}, camera: {} };
+
+    sections.forEach(function (sectionKey) {
+      const targetKey = sectionKey.toLowerCase();
+      const categories = getSectionCategories(sectionKey);
+      categories.forEach(function (category) {
+        data[targetKey][category.name] = category.values;
+      });
+    });
+
+    return data;
+  } catch (error) {
+    logError('getDashboardData', error);
+    return { character: {}, scene: {}, camera: {} };
+  }
+}
+
+/**
+ * 💾 Appends a generated prompt's selections to the History/Log sheet
+ * Header: Category | Value | Source | Timestamp (appendRow only — never overwrites/dedupes existing rows)
+ */
+function savePromptToLog(promptText, selections) {
+  try {
+    const ss = SpreadsheetApp.getActiveSpreadsheet();
+    const sheet = getOrCreateSheet(ss, 'History/Log');
+
+    if (sheet.getLastRow() < 1) {
+      sheet.appendRow(['Category', 'Value', 'Source', 'Timestamp']);
+    }
+
+    const timestamp = Utilities.formatDate(
+      new Date(),
+      Session.getScriptTimeZone(),
+      'yyyy-MM-dd HH:mm:ss'
+    );
+
+    const sections = ['character', 'scene', 'camera'];
+    let rowsAppended = 0;
+
+    sections.forEach(function (sectionKey) {
+      const sectionSelections = (selections && selections[sectionKey]) || {};
+      Object.keys(sectionSelections).forEach(function (category) {
+        const value = sectionSelections[category];
+        if (!value) return;
+        sheet.appendRow([category, value, 'Dashboard', timestamp]);
+        rowsAppended++;
+      });
+    });
+
+    if (!rowsAppended) {
+      sheet.appendRow(['Prompt', promptText, 'Dashboard', timestamp]);
+      rowsAppended++;
+    }
+
+    return { success: true, rowsAppended: rowsAppended, message: '✅ Prompt logged successfully!' };
+  } catch (error) {
+    logError('savePromptToLog', error);
+    return { success: false, message: error.message };
+  }
+}
+
+/**
+ * 📤 Exports a generated prompt to Drive (delegates to savePromptToDrive)
+ */
+function exportPromptToDrive(promptText, selections) {
+  try {
+    return savePromptToDrive(promptText);
+  } catch (error) {
+    logError('exportPromptToDrive', error);
     return { success: false, message: error.message };
   }
 }
