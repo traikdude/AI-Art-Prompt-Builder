@@ -14,7 +14,7 @@
  * All responses: { ok: boolean, action, data | error, version }
  */
 
-const API_VERSION = '5.2.0-api2';
+const API_VERSION = '5.2.0-api3';
 
 function doGet(e) {
   return apiHandle_(e, 'GET');
@@ -40,6 +40,8 @@ function apiHandle_(e, method) {
         return apiJson_({ ok: true, action: 'categories', data: apiCategories_(req.section) });
       case 'prompt':
         return apiJson_(apiPrompt_(req.selections, req.formats));
+      case 'archive_diff':
+        return apiJson_({ ok: true, action: 'archive_diff', data: apiArchiveDiff_(req.section) });
       default:
         return apiJson_({ ok: false, action: req.action, error: 'Unknown action. Use health | categories | prompt' });
     }
@@ -119,6 +121,31 @@ function apiPrompt_(selections, wantFormats) {
     data.video = generateVideoFormat(selections);
   }
   return { ok: true, action: 'prompt', data: data };
+}
+
+/**
+ * 📜 Read-only diff of the 11/21/2025 archive sheet against the live tab (no writes).
+ * section: character | scene | camera (Shots). Returns counts plus up to 50 sample missing values.
+ */
+function apiArchiveDiff_(section) {
+  const key = String(section || 'camera').toUpperCase();
+  const logical = CONFIG.SECTION_ALIASES[key] || key;
+  if (!ARCHIVE_TABS[logical]) throw new Error('Unknown section "' + section + '". Use character | scene | camera');
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const archive = SpreadsheetApp.openById(ARCHIVE_SHEET_ID);
+  const archiveTab = firstExistingTab_(archive, ARCHIVE_TABS[logical]);
+  if (!archiveTab) throw new Error('Archive tab not found for ' + logical);
+  const liveTab = getSheetByAnyName(ss, CONFIG.SECTIONS[logical].dbSheet);
+  const liveSet = liveTab ? categoryValueSet_(liveTab) : new Set();
+  const archiveSet = categoryValueSet_(archiveTab);
+  const missing = archiveMissingRows_(archiveTab, liveSet);
+  const byCategory = {};
+  missing.forEach(function (r) { byCategory[r[0]] = (byCategory[r[0]] || 0) + 1; });
+  return {
+    section: logical, archiveTab: archiveTab.getName(), liveTab: liveTab ? liveTab.getName() : null,
+    liveValues: liveSet.size, archiveValues: archiveSet.size, missingFromLive: missing.length,
+    missingByCategory: byCategory, sample: missing.slice(0, 50)
+  };
 }
 
 /**
