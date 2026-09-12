@@ -44,7 +44,8 @@ const CONFIG = {
     'Character': ['Character', 'CHARACTER'],
     'Scene Settings': ['Scene Settings', 'SCENE', 'Scene'],
     'Shots': ['Shots', 'CAMERA', 'Camera', 'SHOTS'],
-    'History/Log': ['History/Log', 'Selections Log']
+    'History/Log': ['History/Log', 'Selections Log'],
+    'Video': ['Video', 'VIDEO']
   },
 
   // Section Keys - Normalized uppercase for consistency 🔤
@@ -61,7 +62,9 @@ const CONFIG = {
     'camera': 'CAMERA',
     'CHARACTER': 'CHARACTER',
     'SCENE': 'SCENE',
-    'CAMERA': 'CAMERA'
+    'CAMERA': 'CAMERA',
+    'video': 'VIDEO',
+    'VIDEO': 'VIDEO'
   },
 
   // Cache Settings 💾
@@ -128,6 +131,15 @@ const CONFIG = {
       rangeEnd: 'D50',
       categoryColumn: 'A',
       headerRow: 29
+    },
+    VIDEO: {
+      key: 'VIDEO',
+      name: '🎥 VIDEO MOTION',
+      dbSheet: 'Video',
+      rangeStart: null,
+      rangeEnd: null,
+      categoryColumn: null,
+      headerRow: null
     }
   },
 
@@ -247,6 +259,7 @@ function onOpen() {
       .addSeparator()
       .addItem('📥 Setup Import Sheets', 'setupImportSheets')
       .addItem('🔄 Refresh All Validations', 'refreshAllDropdowns')
+      .addItem('🎥 Setup Video Tab', 'seedVideoCategories')
       .addSeparator()
       .addItem('🧰 Run Diagnostics', 'runFullDiagnostics')
       .addItem('🧪 Debug Camera Categories', 'debugCameraDiagnosis')

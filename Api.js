@@ -14,7 +14,7 @@
  * All responses: { ok: boolean, action, data | error, version }
  */
 
-const API_VERSION = '5.2.0-api1';
+const API_VERSION = '5.2.0-api2';
 
 function doGet(e) {
   return apiHandle_(e, 'GET');
@@ -91,9 +91,12 @@ function apiCheckToken_(token) {
  */
 function apiCategories_(section) {
   const all = getDashboardData();
+  const video = {};
+  getSectionCategories('VIDEO').forEach(function (c) { video[c.name] = c.values; });
+  all.video = video;
   if (!section) return all;
   const key = String(section).toLowerCase();
-  if (!all[key]) throw new Error('Unknown section "' + section + '". Use character | scene | camera');
+  if (!all[key]) throw new Error('Unknown section "' + section + '". Use character | scene | camera | video');
   const out = {};
   out[key] = all[key];
   return out;
@@ -111,6 +114,9 @@ function apiPrompt_(selections, wantFormats) {
   if (wantFormats) {
     const multi = generateMultiFormatPrompts(selections);
     data.formats = multi.success ? multi.formats : null;
+  }
+  if (selections.video && Object.keys(selections.video).length) {
+    data.video = generateVideoFormat(selections);
   }
   return { ok: true, action: 'prompt', data: data };
 }
