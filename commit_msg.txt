@@ -1,7 +1,0 @@
-ci: add GitHub Actions workflow for typecheck, build, and live endpoint verification
-
-- Add .github/workflows/ci.yml running on push/PR to main and daily cron.
-- Add scripts/verify-endpoints.js to assert live reachability of Google Sheet
-  columnar tabs (DB_Character, DB_Scene, DB_Camera) and Web App API.
-- Add typecheck, test:reachability, and test scripts to package.json.
-- Remove stale src/App.tsx duplicate to establish clean TypeScript checks.
