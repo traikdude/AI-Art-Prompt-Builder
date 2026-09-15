@@ -1,0 +1,944 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🎨 AI Art Prompt Builder Dashboard v5.2.0</title>
+    <style>
+        /* 🎨✨ ENHANCED MODERN DESIGN SYSTEM V5.2.0 🌈💫 */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            /* 🌈 Color Palette */
+            --primary: #667eea;
+            --secondary: #764ba2;
+            --success: #10b981;
+            --danger: #ef4444;
+            --warning: #f59e0b;
+            --info: #3b82f6;
+            --dark: #1f2937;
+            --light: #f3f4f6;
+            --white: #ffffff;
+            
+            /* 📐 Spacing */
+            --spacing-xs: 0.25rem;
+            --spacing-sm: 0.5rem;
+            --spacing-md: 1rem;
+            --spacing-lg: 1.5rem;
+            --spacing-xl: 2rem;
+            
+            /* 🎨 Shadows */
+            --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.1);
+            --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.1);
+            --shadow-lg: 0 10px 15px rgba(0, 0, 0, 0.1);
+            
+            /* 📏 Border Radius */
+            --radius-sm: 0.375rem;
+            --radius-md: 0.5rem;
+            --radius-lg: 0.75rem;
+            --radius-xl: 1rem;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: var(--spacing-lg);
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: var(--white);
+            border-radius: var(--radius-xl);
+            box-shadow: var(--shadow-lg);
+            overflow: hidden;
+        }
+
+        /* 🎯 Header Styles */
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: var(--white);
+            padding: var(--spacing-xl);
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            font-weight: 700;
+            margin-bottom: var(--spacing-sm);
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.2);
+        }
+
+        .header p {
+            font-size: 1.1rem;
+            opacity: 0.9;
+        }
+
+        /* 🎛️ Controls Bar */
+        .controls {
+            background: var(--light);
+            padding: var(--spacing-lg);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: var(--spacing-md);
+            border-bottom: 2px solid #e5e7eb;
+        }
+
+        .button-group {
+            display: flex;
+            gap: var(--spacing-sm);
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            padding: var(--spacing-sm) var(--spacing-lg);
+            border: none;
+            border-radius: var(--radius-md);
+            font-size: 0.95rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: var(--spacing-sm);
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: var(--white);
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-md);
+        }
+
+        .btn-success {
+            background: var(--success);
+            color: var(--white);
+        }
+
+        .btn-warning {
+            background: var(--warning);
+            color: var(--white);
+        }
+
+        .btn-info {
+            background: var(--info);
+            color: var(--white);
+        }
+
+        .btn-danger {
+            background: var(--danger);
+            color: var(--white);
+        }
+
+        /* 📊 Main Content Grid */
+        .content {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: var(--spacing-lg);
+            padding: var(--spacing-xl);
+        }
+
+        .section-card {
+            background: var(--white);
+            border: 2px solid #e5e7eb;
+            border-radius: var(--radius-lg);
+            padding: var(--spacing-lg);
+            transition: all 0.3s ease;
+        }
+
+        .section-card:hover {
+            border-color: var(--primary);
+            box-shadow: var(--shadow-md);
+            transform: translateY(-4px);
+        }
+
+        .section-header {
+            display: flex;
+            align-items: center;
+            gap: var(--spacing-sm);
+            margin-bottom: var(--spacing-lg);
+            padding-bottom: var(--spacing-md);
+            border-bottom: 2px solid var(--light);
+        }
+
+        .section-header h2 {
+            font-size: 1.5rem;
+            color: var(--dark);
+        }
+
+        .section-icon {
+            font-size: 2rem;
+        }
+
+        /* 🎨 Category Selection */
+        .category-group {
+            margin-bottom: var(--spacing-lg);
+        }
+
+        .category-label {
+            display: block;
+            font-weight: 600;
+            color: var(--dark);
+            margin-bottom: var(--spacing-sm);
+            font-size: 0.95rem;
+        }
+
+        .select-wrapper {
+            position: relative;
+        }
+
+        .category-select {
+            width: 100%;
+            padding: var(--spacing-md);
+            border: 2px solid #e5e7eb;
+            border-radius: var(--radius-md);
+            font-size: 1rem;
+            background: var(--white);
+            cursor: pointer;
+            transition: all 0.3s ease;
+            appearance: none;
+        }
+
+        .category-select:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        .category-select:hover {
+            border-color: var(--primary);
+        }
+
+        .select-wrapper::after {
+            content: '▼';
+            position: absolute;
+            right: 1rem;
+            top: 50%;
+            transform: translateY(-50%);
+            pointer-events: none;
+            color: var(--primary);
+        }
+
+        /* ✨ Prompt Output Area */
+        .prompt-output {
+            background: var(--light);
+            padding: var(--spacing-xl);
+            border-radius: var(--radius-lg);
+            margin-top: var(--spacing-xl);
+        }
+
+        .prompt-display {
+            background: var(--white);
+            padding: var(--spacing-lg);
+            border-radius: var(--radius-md);
+            border: 2px solid #e5e7eb;
+            min-height: 150px;
+            font-family: 'Courier New', monospace;
+            font-size: 1rem;
+            line-height: 1.6;
+            color: var(--dark);
+            white-space: pre-wrap;
+            word-wrap: break-word;
+        }
+
+        .prompt-actions {
+            display: flex;
+            gap: var(--spacing-sm);
+            margin-top: var(--spacing-md);
+            flex-wrap: wrap;
+        }
+
+        /* 📊 Statistics Panel */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: var(--spacing-md);
+            margin-top: var(--spacing-lg);
+        }
+
+        .stat-card {
+            background: var(--white);
+            padding: var(--spacing-md);
+            border-radius: var(--radius-md);
+            border: 2px solid #e5e7eb;
+            text-align: center;
+        }
+
+        .stat-value {
+            font-size: 2rem;
+            font-weight: 700;
+            color: var(--primary);
+        }
+
+        .stat-label {
+            font-size: 0.875rem;
+            color: #6b7280;
+            margin-top: var(--spacing-xs);
+        }
+
+        /* 🔄 Loading & Status */
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            border-top-color: var(--white);
+            animation: spin 1s ease-in-out infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .status-message {
+            padding: var(--spacing-md);
+            border-radius: var(--radius-md);
+            margin-top: var(--spacing-md);
+            display: none;
+        }
+
+        .status-success {
+            background: #d1fae5;
+            color: #065f46;
+            border: 1px solid #10b981;
+        }
+
+        .status-error {
+            background: #fee2e2;
+            color: #991b1b;
+            border: 1px solid #ef4444;
+        }
+
+        .status-info {
+            background: #dbeafe;
+            color: #1e40af;
+            border: 1px solid #3b82f6;
+        }
+
+        /* 📱 Responsive Design */
+        @media (max-width: 768px) {
+            .content {
+                grid-template-columns: 1fr;
+            }
+            
+            .controls {
+                flex-direction: column;
+                align-items: stretch;
+            }
+            
+            .button-group {
+                flex-direction: column;
+            }
+            
+            .btn {
+                width: 100%;
+                justify-content: center;
+            }
+        }
+
+        /* 🎯 Accessibility */
+        .sr-only {
+            position: absolute;
+            width: 1px;
+            height: 1px;
+            padding: 0;
+            margin: -1px;
+            overflow: hidden;
+            clip: rect(0, 0, 0, 0);
+            white-space: nowrap;
+            border-width: 0;
+        }
+
+        /* 🎨 Selection Counter */
+        .selection-counter {
+            font-size: 0.875rem;
+            color: #6b7280;
+            margin-top: var(--spacing-xs);
+        }
+
+        .counter-badge {
+            display: inline-block;
+            padding: 2px 8px;
+            background: var(--primary);
+            color: var(--white);
+            border-radius: 12px;
+            font-weight: 600;
+            margin-left: var(--spacing-xs);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- 🎯 Header Section -->
+        <div class="header">
+            <h1>🎨✨ AI Art Prompt Builder v5.2.0</h1>
+            <p>Create Professional AI Art Prompts with Interactive Category Selection</p>
+        </div>
+
+        <!-- 🎛️ Controls Bar -->
+        <div class="controls">
+            <div class="button-group">
+                <button class="btn btn-primary" onclick="generatePrompt()">
+                    🎨 Generate Prompt
+                </button>
+                <button class="btn btn-success" onclick="copyToClipboard()">
+                    📋 Copy Prompt
+                </button>
+                <button class="btn btn-info" onclick="saveToLog()">
+                    💾 Save to Log
+                </button>
+            </div>
+            
+            <div class="button-group">
+                <button class="btn btn-warning" onclick="clearSelections()">
+                    🔄 Clear All
+                </button>
+                <button class="btn btn-info" onclick="refreshCategories()">
+                    ↻ Refresh
+                </button>
+                <button class="btn btn-danger" onclick="showHelp()">
+                    ❓ Help
+                </button>
+            </div>
+        </div>
+
+        <!-- 📊 Main Content Grid -->
+        <div class="content">
+            <!-- 👤 Character Section -->
+            <div class="section-card">
+                <div class="section-header">
+                    <span class="section-icon">👤</span>
+                    <h2>Character Design</h2>
+                </div>
+                <div id="character-categories">
+                    <p style="color: #6b7280;">Loading categories...</p>
+                </div>
+                <div class="selection-counter">
+                    <span>Selected: <span class="counter-badge" id="character-count">0</span></span>
+                </div>
+            </div>
+
+            <!-- 🎬 Scene Section -->
+            <div class="section-card">
+                <div class="section-header">
+                    <span class="section-icon">🎬</span>
+                    <h2>Scene Settings</h2>
+                </div>
+                <div id="scene-categories">
+                    <p style="color: #6b7280;">Loading categories...</p>
+                </div>
+                <div class="selection-counter">
+                    <span>Selected: <span class="counter-badge" id="scene-count">0</span></span>
+                </div>
+            </div>
+
+            <!-- 📸 Camera Section -->
+            <div class="section-card">
+                <div class="section-header">
+                    <span class="section-icon">📸</span>
+                    <h2>Camera & Composition</h2>
+                </div>
+                <div id="camera-categories">
+                    <p style="color: #6b7280;">Loading categories...</p>
+                </div>
+                <div class="selection-counter">
+                    <span>Selected: <span class="counter-badge" id="camera-count">0</span></span>
+                </div>
+            </div>
+        </div>
+
+        <!-- ✨ Prompt Output Area -->
+        <div class="prompt-output">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--spacing-md); flex-wrap: wrap; gap: 8px;">
+                <h3 style="color: var(--dark);">
+                    ✨ Live Composed Prompt (Auto-Updates on Selection)
+                </h3>
+                <div style="display: flex; gap: 6px; flex-wrap: wrap;">
+                    <button class="btn" id="btn-mode-clean" onclick="setPromptMode('clean')" style="font-size: 0.8rem; padding: 5px 12px; background: #6366f1; color: white; border-radius: 6px;">🎯 Clean Tokens (Midjourney/Flux)</button>
+                    <button class="btn" id="btn-mode-structured" onclick="setPromptMode('structured')" style="font-size: 0.8rem; padding: 5px 12px; background: #e5e7eb; color: #374151; border-radius: 6px;">🏷️ Structured</button>
+                    <button class="btn" id="btn-mode-prefix" onclick="setPromptMode('prefix')" style="font-size: 0.8rem; padding: 5px 12px; background: #e5e7eb; color: #374151; border-radius: 6px;">⚡ With Prefix</button>
+                </div>
+            </div>
+            <div class="prompt-display" id="prompt-display" onclick="copyToClipboard()" title="Click anywhere inside to copy prompt to clipboard!" style="cursor: pointer; position: relative;">
+                ✨ Select options from the dropdown menus above — your composed prompt will appear here in real-time ready to copy!
+            </div>
+            <div class="prompt-actions">
+                <button class="btn btn-success" onclick="copyToClipboard()" style="font-weight: bold;">
+                    📋 Copy Prompt to Clipboard
+                </button>
+                <button class="btn btn-info" onclick="saveToLog()">
+                    💾 Save to Log
+                </button>
+                <button class="btn btn-primary" onclick="exportPrompt()">
+                    📤 Export
+                </button>
+            </div>
+            
+            <!-- Status Messages -->
+            <div id="status-message" class="status-message"></div>
+        </div>
+
+        <!-- 📊 Statistics Panel -->
+        <div class="prompt-output">
+            <h3 style="margin-bottom: var(--spacing-md); color: var(--dark);">
+                📊 Session Statistics
+            </h3>
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-value" id="total-prompts">0</div>
+                    <div class="stat-label">Total Prompts</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="character-selections">0</div>
+                    <div class="stat-label">Character Traits</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="scene-selections">0</div>
+                    <div class="stat-label">Scene Elements</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="camera-selections">0</div>
+                    <div class="stat-label">Camera Settings</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 🔧 JavaScript Logic -->
+    <script>
+        // ⚡ TIER 1: Server-Side Template Pre-injected Data (0ms latency!)
+        let serverPreloaded = null;
+        try {
+            serverPreloaded = <?!= (typeof preloadedCategories !== 'undefined' && preloadedCategories) ? JSON.stringify(preloadedCategories) : 'null' ?>;
+        } catch (e) {
+            console.log('Template preloaded data not available:', e);
+        }
+
+        // 🎯 Sheet Configuration
+        const SHEET_CONFIG = {
+            CHARACTER: 'CHARACTER',
+            SCENE: 'SCENE',
+            CAMERA: 'CAMERA'
+        };
+
+        const LOCAL_CACHE_KEY = 'ai_art_prompt_categories_v5';
+        const API_ENDPOINT = 'https://script.google.com/macros/s/AKfycbyCjig1ociubkgrGw5P814n3aX1pQvzM4N5erySJWTJijL2oQW9ZfBZDUvwohLxHmyjNw/exec';
+
+        // 🎯 Global State Management
+        let categoriesData = {
+            character: {},
+            scene: {},
+            camera: {}
+        };
+        
+        let selections = {
+            character: {},
+            scene: {},
+            camera: {}
+        };
+        
+        let stats = {
+            totalPrompts: 0,
+            characterSelections: 0,
+            sceneSelections: 0,
+            cameraSelections: 0
+        };
+
+        // 🚀 Initialize Dashboard (Multi-Tier Blazing Fast Loading)
+        window.onload = function() {
+            console.log('🎨 Initializing AI Art Prompt Builder Dashboard v5.2.0...');
+            console.log('📊 Sheet Configuration:', SHEET_CONFIG);
+
+            // Tier 1: Instant Server Template Pre-Injection (0ms!)
+            if (serverPreloaded && serverPreloaded.character && Object.keys(serverPreloaded.character).length > 0) {
+                console.log('⚡ [Tier 1] Loaded from Server Template Pre-Injection (0ms)!', serverPreloaded);
+                categoriesData = serverPreloaded;
+                try { localStorage.setItem(LOCAL_CACHE_KEY, JSON.stringify(serverPreloaded)); } catch(e){}
+                renderAllCategories();
+                showStatus('⚡ Categories loaded instantly from template!', 'success');
+                return;
+            }
+
+            // Tier 2: Instant Client localStorage Cache (<5ms!)
+            try {
+                const cachedStr = localStorage.getItem(LOCAL_CACHE_KEY);
+                if (cachedStr) {
+                    const cachedData = JSON.parse(cachedStr);
+                    if (cachedData && cachedData.character && Object.keys(cachedData.character).length > 0) {
+                        console.log('⚡ [Tier 2] Loaded from localStorage cache (<5ms)!', cachedData);
+                        categoriesData = cachedData;
+                        renderAllCategories();
+                        showStatus('⚡ Loaded instantly from local cache (refreshing in background...)', 'info');
+                        // Silent background revalidation
+                        loadCategoriesFromBackend(true);
+                        return;
+                    }
+                }
+            } catch(e) {
+                console.warn('localStorage read error:', e);
+            }
+
+            // Tier 3: Fetch from Backend (with API fallback watchdog)
+            loadCategoriesFromBackend(false);
+        };
+
+        // 📥 Load Categories from Backend with Watchdog & Direct API Fallback
+        function loadCategoriesFromBackend(isSilent) {
+            if (!isSilent) {
+                showStatus('Loading categories from backend...', 'info');
+            }
+
+            let completed = false;
+
+            // Watchdog: If google.script.run hangs for > 5s, fallback to direct API endpoint!
+            const watchdogTimer = setTimeout(() => {
+                if (!completed && !isSilent) {
+                    console.warn('⚠️ google.script.run latency exceeded 5s, falling back to direct API endpoint...');
+                    fetchCategoriesViaApi(isSilent);
+                }
+            }, 5000);
+
+            if (typeof google !== 'undefined' && google.script && google.script.run) {
+                google.script.run
+                    .withSuccessHandler(function(data) {
+                        completed = true;
+                        clearTimeout(watchdogTimer);
+                        console.log('✅ [Tier 3] Categories loaded from backend:', data);
+                        if (data && data.character && Object.keys(data.character).length > 0) {
+                            categoriesData = data;
+                            try { localStorage.setItem(LOCAL_CACHE_KEY, JSON.stringify(data)); } catch(e){}
+                            renderAllCategories();
+                            if (!isSilent) showStatus('Categories loaded successfully! 🎯', 'success');
+                        } else if (!isSilent) {
+                            fetchCategoriesViaApi(false);
+                        }
+                    })
+                    .withFailureHandler(function(error) {
+                        completed = true;
+                        clearTimeout(watchdogTimer);
+                        console.error('❌ Error from google.script.run:', error);
+                        fetchCategoriesViaApi(isSilent);
+                    })
+                    .getDashboardData(false);
+            } else {
+                fetchCategoriesViaApi(isSilent);
+            }
+        }
+
+        // 🌐 Tier 4: Direct Web App API Fetch Fallback
+        function fetchCategoriesViaApi(isSilent) {
+            if (!isSilent) showStatus('Fetching categories via fast API endpoint...', 'info');
+            fetch(API_ENDPOINT + '?action=categories')
+                .then(res => res.json())
+                .then(res => {
+                    if (res && res.ok && res.data) {
+                        console.log('✅ [Tier 4] Categories loaded via API fetch:', res.data);
+                        categoriesData = res.data;
+                        try { localStorage.setItem(LOCAL_CACHE_KEY, JSON.stringify(res.data)); } catch(e){}
+                        renderAllCategories();
+                        if (!isSilent) showStatus('Categories synced via API endpoint! 🚀', 'success');
+                    } else if (!isSilent) {
+                        showStatus('Error loading categories from API', 'error');
+                    }
+                })
+                .catch(err => {
+                    console.error('❌ API fetch error:', err);
+                    if (!isSilent) showStatus('Could not load categories: ' + err.message, 'error');
+                });
+        }
+
+        // 🎨 Render All Category Sections
+        function renderAllCategories() {
+            renderCategorySection('character', '👤');
+            renderCategorySection('scene', '🎬');
+            renderCategorySection('camera', '📸');
+            updateSelectionCounters();
+        }
+
+        let promptMode = 'clean'; // 'clean' | 'structured' | 'prefix'
+
+        function setPromptMode(mode) {
+            promptMode = mode;
+            ['clean', 'structured', 'prefix'].forEach(m => {
+                const btn = document.getElementById('btn-mode-' + m);
+                if (btn) {
+                    if (m === mode) {
+                        btn.style.background = '#6366f1';
+                        btn.style.color = '#ffffff';
+                    } else {
+                        btn.style.background = '#e5e7eb';
+                        btn.style.color = '#374151';
+                    }
+                }
+            });
+            generatePrompt(true);
+        }
+
+        // 🖼️ Render Individual Category Section
+        function renderCategorySection(section, icon) {
+            const container = document.getElementById(`${section}-categories`);
+            const categories = categoriesData[section];
+            
+            if (!categories || Object.keys(categories).length === 0) {
+                container.innerHTML = '<p style="color: #ef4444;">No categories available for ' + section.toUpperCase() + '</p>';
+                return;
+            }
+            
+            let html = '';
+            for (const [category, values] of Object.entries(categories)) {
+                // Filter out broken formulas (#REF!) and empty strings
+                const cleanValues = (values || []).filter(v => v && !String(v).trim().startsWith('#'));
+                if (cleanValues.length === 0) continue;
+
+                html += `
+                    <div class="category-group">
+                        <label class="category-label">${icon} ${formatCategoryName(category)}</label>
+                        <div class="select-wrapper">
+                            <select class="category-select" 
+                                    id="${section}-${category}" 
+                                    onchange="handleSelection('${section}', '${category}', this.value)">
+                                <option value="">-- Select ${category} --</option>
+                                ${cleanValues.map(value => 
+                                    `<option value="${value}">${value}</option>`
+                                ).join('')}
+                            </select>
+                        </div>
+                    </div>
+                `;
+            }
+            
+            container.innerHTML = html;
+        }
+
+        // 🎯 Handle Selection Changes (Auto-Updates Prompt in Real-Time!)
+        function handleSelection(section, category, value) {
+            if (value) {
+                selections[section][category] = value;
+                stats[`${section}Selections`]++;
+            } else {
+                delete selections[section][category];
+            }
+            
+            updateSelectionCounters();
+            updateStats();
+            generatePrompt(true); // ⚡ Immediate reactive composition!
+        }
+
+        // 📊 Update Selection Counters
+        function updateSelectionCounters() {
+            document.getElementById('character-count').textContent = 
+                Object.keys(selections.character).length;
+            document.getElementById('scene-count').textContent = 
+                Object.keys(selections.scene).length;
+            document.getElementById('camera-count').textContent = 
+                Object.keys(selections.camera).length;
+        }
+
+        // 📊 Update Statistics Display
+        function updateStats() {
+            document.getElementById('total-prompts').textContent = stats.totalPrompts;
+            document.getElementById('character-selections').textContent = stats.characterSelections;
+            document.getElementById('scene-selections').textContent = stats.sceneSelections;
+            document.getElementById('camera-selections').textContent = stats.cameraSelections;
+        }
+
+        // 🎨 Generate Prompt (Supports Clean, Structured, and Prefix Modes)
+        function generatePrompt(isAuto) {
+            const characterParts = Object.values(selections.character || {}).filter(Boolean);
+            const sceneParts = Object.values(selections.scene || {}).filter(Boolean);
+            const cameraParts = Object.values(selections.camera || {}).filter(Boolean);
+            const totalCount = characterParts.length + sceneParts.length + cameraParts.length;
+            const display = document.getElementById('prompt-display');
+            
+            if (totalCount === 0) {
+                display.textContent = '✨ Select options from the dropdown menus above — your composed prompt will appear here in real-time ready to copy!';
+                if (!isAuto) showStatus('Please make at least one selection before generating a prompt', 'error');
+                return;
+            }
+            
+            let prompt = '';
+            if (promptMode === 'clean') {
+                const allParts = [].concat(characterParts, sceneParts, cameraParts);
+                prompt = allParts.join(', ');
+            } else if (promptMode === 'structured') {
+                if (characterParts.length > 0) prompt += '👤 Character: ' + characterParts.join(', ') + '. ';
+                if (sceneParts.length > 0) prompt += '🎬 Scene: ' + sceneParts.join(', ') + '. ';
+                if (cameraParts.length > 0) prompt += '📸 Camera: ' + cameraParts.join(', ') + '.';
+            } else if (promptMode === 'prefix') {
+                const allParts = [].concat(characterParts, sceneParts, cameraParts);
+                prompt = 'GENERATE AN IMAGE: ' + allParts.join(', ');
+            }
+            
+            display.textContent = prompt.trim();
+            if (!isAuto) {
+                stats.totalPrompts++;
+                updateStats();
+                showStatus('Prompt generated successfully!', 'success');
+            }
+        }
+
+        // 📋 Copy to Clipboard
+        function copyToClipboard() {
+            const promptText = document.getElementById('prompt-display').textContent.trim();
+            
+            if (!promptText || promptText.includes('Select options from the dropdown') || promptText.includes('will appear here')) {
+                showStatus('Please select some options first before copying!', 'error');
+                return;
+            }
+            
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+                navigator.clipboard.writeText(promptText)
+                    .then(() => {
+                        showStatus('✅ Prompt copied to clipboard! Ready to paste into Midjourney / Flux / DALL-E', 'success');
+                    })
+                    .catch(err => {
+                        fallbackCopy(promptText);
+                    });
+            } else {
+                fallbackCopy(promptText);
+            }
+        }
+
+        function fallbackCopy(text) {
+            const textarea = document.createElement('textarea');
+            textarea.value = text;
+            textarea.style.position = 'fixed';
+            textarea.style.opacity = '0';
+            document.body.appendChild(textarea);
+            textarea.select();
+            try {
+                document.execCommand('copy');
+                showStatus('✅ Prompt copied to clipboard! Ready to paste into Midjourney / Flux / DALL-E', 'success');
+            } catch (err) {
+                showStatus('Failed to copy: ' + err.message, 'error');
+            }
+            document.body.removeChild(textarea);
+        }
+
+        // 💾 Save to Log
+        function saveToLog() {
+            const promptText = document.getElementById('prompt-display').textContent.trim();
+            
+            if (!promptText || promptText.includes('Select options from the dropdown') || promptText.includes('will appear here')) {
+                showStatus('Select some options first before saving', 'error');
+                return;
+            }
+            
+            showStatus('Saving to log...', 'info');
+            
+            google.script.run
+                .withSuccessHandler(function(result) {
+                    showStatus('Prompt saved to log successfully!', 'success');
+                })
+                .withFailureHandler(function(error) {
+                    showStatus('Error saving to log: ' + error.message, 'error');
+                })
+                .savePromptToLog(promptText, selections);
+        }
+
+        // 🔄 Clear Selections
+        function clearSelections() {
+            selections = {
+                character: {},
+                scene: {},
+                camera: {}
+            };
+            
+            // Reset all dropdowns
+            document.querySelectorAll('.category-select').forEach(select => {
+                select.selectedIndex = 0;
+            });
+            
+            document.getElementById('prompt-display').textContent = 
+                '✨ Select options from the dropdown menus above — your composed prompt will appear here in real-time ready to copy!';
+            
+            updateSelectionCounters();
+            showStatus('All selections cleared', 'info');
+        }
+
+        // ↻ Refresh Categories (Clears LocalStorage + Forces Backend Cache Rebuild)
+        function refreshCategories() {
+            showStatus('Refreshing all categories from live spreadsheet...', 'info');
+            try { localStorage.removeItem(LOCAL_CACHE_KEY); } catch(e){}
+            
+            if (typeof google !== 'undefined' && google.script && google.script.run) {
+                google.script.run
+                    .withSuccessHandler(function(result) {
+                        if (result && result.data && result.data.character) {
+                            categoriesData = result.data;
+                            try { localStorage.setItem(LOCAL_CACHE_KEY, JSON.stringify(result.data)); } catch(e){}
+                            renderAllCategories();
+                            showStatus('✅ Categories refreshed and cached successfully!', 'success');
+                        } else {
+                            loadCategoriesFromBackend(false);
+                        }
+                    })
+                    .withFailureHandler(function(error) {
+                        console.error('Refresh error:', error);
+                        loadCategoriesFromBackend(false);
+                    })
+                    .refreshAllDropdowns();
+            } else {
+                fetchCategoriesViaApi(false);
+            }
+        }
+
+        // 📤 Export Prompt
+        function exportPrompt() {
+            const promptText = document.getElementById('prompt-display').textContent;
+            
+            if (promptText.includes('will appear here')) {
+                showStatus('Generate a prompt first before exporting', 'error');
+                return;
+            }
+            
+            showStatus('Exporting prompt...', 'info');
+            
+            google.script.run
+                .withSuccessHandler(function(result) {
+                    showStatus('Prompt exported successfully!', 'success');
+                })
+                .withFailureHandler(function(error) {
+                    showStatus('Error exporting: ' + error.message, 'error');
+                })
+                .exportPromptToDrive(promptText, selections);
+        }
+
+        // ❓ Show Help
+        function showHelp() {
+            google.script.run.showHelp();
+        }
+
+        // 📢 Show Status Message
+        function showStatus(message, type) {
+            const statusDiv = document.getElementById('status-message');
+            statusDiv.textContent = message;
+            statusDiv.className = 'status-message status-' + type;
+            statusDiv.style.display = 'block';
+            
+            setTimeout(() => {
+                statusDiv.style.display = 'none';
+            }, 3000);
+        }
+
+        // 🔤 Format Category Names
+        function formatCategoryName(name) {
+            return name
+                .split('_')
+                .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+                .join(' ');
+        }
+    </script>
+</body>
+</html>

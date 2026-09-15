@@ -1,0 +1,869 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <base target="_top">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>🎨 AI Prompt Builder - Help & Documentation</title>
+  
+  <style>
+    /* Core Typography & Reset */
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      margin: 0;
+      padding: 20px;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: #333;
+      line-height: 1.6;
+      min-height: 100vh;
+      box-sizing: border-box;
+    }
+
+    /* Main Container */
+    .help-container {
+      max-width: 1200px;
+      margin: 0 auto;
+      background: white;
+      border-radius: 15px;
+      padding: 30px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+      position: relative;
+    }
+
+    /* Header Styling */
+    .help-header {
+      text-align: center;
+      margin-bottom: 40px;
+      padding-bottom: 20px;
+      border-bottom: 3px solid #667eea;
+    }
+
+    .help-header h1 {
+      font-size: 2.5em;
+      margin: 0;
+      background: linear-gradient(135deg, #667eea, #764ba2);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .help-header p {
+      color: #666;
+      font-size: 1.1em;
+      margin-top: 10px;
+    }
+
+    /* Navigation Tabs */
+    .section-tabs {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 30px;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+
+    .tab-button {
+      padding: 12px 24px;
+      border: none;
+      background: #f0f0f0;
+      border-radius: 25px;
+      cursor: pointer;
+      font-size: 1em;
+      transition: all 0.3s ease;
+      font-weight: 600;
+      color: #555;
+    }
+
+    .tab-button:hover {
+      background: #e0e0e0;
+      transform: translateY(-2px);
+    }
+
+    .tab-button.active {
+      background: linear-gradient(135deg, #667eea, #764ba2);
+      color: white;
+      box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+    }
+
+    /* Content Sections & Animation */
+    .help-section {
+      display: none;
+      animation: fadeIn 0.5s ease-in;
+    }
+
+    .help-section.active {
+      display: block;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* Category Cards */
+    .category-card {
+      background: #f8f9fa;
+      border-left: 4px solid #667eea;
+      padding: 20px;
+      margin-bottom: 20px;
+      border-radius: 8px;
+      transition: all 0.3s ease;
+    }
+
+    .category-card:hover {
+      box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+      transform: translateX(5px);
+    }
+
+    .category-title {
+      font-size: 1.3em;
+      font-weight: bold;
+      color: #667eea;
+      margin-bottom: 10px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .category-description {
+      color: #555;
+      margin-bottom: 15px;
+    }
+
+    .category-examples {
+      background: white;
+      padding: 15px;
+      border-radius: 5px;
+      border: 1px solid #e0e0e0;
+    }
+
+    .example-label {
+      font-weight: bold;
+      color: #764ba2;
+      margin-bottom: 8px;
+    }
+
+    .example-list {
+      color: #666;
+      line-height: 1.8;
+    }
+
+    /* Quick Start Guide */
+    .quick-start {
+      background: linear-gradient(135deg, #ffeaa7, #fdcb6e);
+      padding: 25px;
+      border-radius: 10px;
+      margin-bottom: 30px;
+    }
+
+    .quick-start h2 {
+      margin-top: 0;
+      color: #2d3436;
+    }
+
+    .step-list {
+      margin: 15px 0;
+    }
+
+    .step {
+      background: white;
+      padding: 15px;
+      margin: 10px 0;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      gap: 15px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+
+    .step-number {
+      background: linear-gradient(135deg, #667eea, #764ba2);
+      color: white;
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: bold;
+      font-size: 1.2em;
+      flex-shrink: 0;
+    }
+
+    /* Tips Section */
+    .tips-section {
+      background: #e8f5e9;
+      padding: 20px;
+      border-radius: 10px;
+      margin-top: 30px;
+      border-left: 4px solid #4caf50;
+    }
+
+    .tips-section h3 {
+      color: #2e7d32;
+      margin-top: 0;
+    }
+
+    .tip-item {
+      margin: 10px 0;
+      padding-left: 25px;
+      position: relative;
+    }
+
+    .tip-item:before {
+      content: "💡";
+      position: absolute;
+      left: 0;
+    }
+
+    /* Floating Close Button */
+    .close-button {
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      padding: 10px 20px;
+      background: linear-gradient(135deg, #667eea, #764ba2);
+      color: white;
+      border: none;
+      border-radius: 25px;
+      cursor: pointer;
+      font-weight: bold;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+      transition: all 0.3s ease;
+      z-index: 1000;
+    }
+
+    .close-button:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(0,0,0,0.3);
+    }
+
+    /* Feature Grid */
+    .feature-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: 20px;
+      margin-top: 20px;
+    }
+
+    .feature-card {
+      background: white;
+      padding: 20px;
+      border-radius: 10px;
+      border: 2px solid #f0f0f0;
+      transition: all 0.3s ease;
+    }
+
+    .feature-card:hover {
+      border-color: #667eea;
+      box-shadow: 0 5px 15px rgba(102, 126, 234, 0.2);
+    }
+
+    .feature-icon {
+      font-size: 2.5em;
+      margin-bottom: 10px;
+    }
+
+    .feature-title {
+      font-weight: bold;
+      color: #667eea;
+      margin-bottom: 10px;
+    }
+
+    /* Responsive Adjustments */
+    @media (max-width: 768px) {
+      .help-container {
+        padding: 20px;
+      }
+
+      .help-header h1 {
+        font-size: 1.8em;
+      }
+
+      .section-tabs {
+        flex-direction: column;
+      }
+
+      .tab-button {
+        width: 100%;
+      }
+
+      .feature-grid {
+        grid-template-columns: 1fr;
+      }
+      
+      .close-button {
+        top: 10px;
+        right: 10px;
+        padding: 8px 16px;
+        font-size: 0.9em;
+      }
+    }
+  </style>
+</head>
+<body>
+  <!-- Wrapper function to safely handle closing in both browser and GAS -->
+  <button class="close-button" onclick="safeClose()">✕ Close</button>
+
+  <div class="help-container">
+    <!-- Header Section -->
+    <div class="help-header">
+      <h1>🎨✨ AI Art Prompt Builder v5.1.1</h1>
+      <p>Your Complete Guide to Creating Amazing AI Art Prompts</p>
+    </div>
+
+    <!-- Quick Start Guide -->
+    <div class="quick-start">
+      <h2>🚀 Quick Start Guide</h2>
+      <div class="step-list">
+        <div class="step">
+          <div class="step-number">1</div>
+          <div>Open the Dashboard from the menu: <strong>🎨 AI Prompt Builder → 📊 Open Interactive Dashboard</strong></div>
+        </div>
+        <div class="step">
+          <div class="step-number">2</div>
+          <div>Select options from the three sections: <strong>👤 Character, 🎬 Scene, 📸 Camera</strong></div>
+        </div>
+        <div class="step">
+          <div class="step-number">3</div>
+          <div>Click <strong>"🎨 Generate Prompt"</strong> to create your AI art prompt</div>
+        </div>
+        <div class="step">
+          <div class="step-number">4</div>
+          <div>Copy the prompt and use it in your favorite AI art generator!</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Section Tabs -->
+    <div class="section-tabs">
+      <button class="tab-button active" onclick="showSection('overview')">📋 Overview</button>
+      <button class="tab-button" onclick="showSection('character')">👤 Character Design</button>
+      <button class="tab-button" onclick="showSection('scene')">🎬 Scene Settings</button>
+      <button class="tab-button" onclick="showSection('camera')">📸 Camera & Composition</button>
+      <button class="tab-button" onclick="showSection('features')">✨ Features</button>
+      <button class="tab-button" onclick="showSection('tips')">💡 Pro Tips</button>
+    </div>
+
+    <!-- Overview Section -->
+    <div id="overview" class="help-section active">
+      <h2>📋 System Overview</h2>
+      <p>The AI Art Prompt Builder is a powerful tool designed to help you create detailed, professional prompts for AI image generation. 🎨 By combining elements from three core categories, you can craft unique and compelling descriptions that guide AI systems to produce exactly what you envision! ✨</p>
+
+      <div class="feature-grid">
+        <div class="feature-card">
+          <div class="feature-icon">👤</div>
+          <div class="feature-title">Character Design</div>
+          <p>Define physical appearance, clothing, and distinctive features of your subjects. 💪👗</p>
+        </div>
+
+        <div class="feature-card">
+          <div class="feature-icon">🎬</div>
+          <div class="feature-title">Scene Settings</div>
+          <p>Control lighting, environment, mood, and atmospheric elements. 💡🌲</p>
+        </div>
+
+        <div class="feature-card">
+          <div class="feature-icon">📸</div>
+          <div class="feature-title">Camera & Composition</div>
+          <p>Set camera angles, shot types, and technical photography details. 📷🎞️</p>
+        </div>
+
+        <div class="feature-card">
+          <div class="feature-icon">🔄</div>
+          <div class="feature-title">Smart Imports</div>
+          <p>Automatically organize and import prompts from AI generation tools. 📥💾</p>
+        </div>
+
+        <div class="feature-card">
+          <div class="feature-icon">📊</div>
+          <div class="feature-title">Multiple Formats</div>
+          <p>Generate prompts in narrative, technical, poetic, and bullet formats. 📝✨</p>
+        </div>
+
+        <div class="feature-card">
+          <div class="feature-icon">💾</div>
+          <div class="feature-title">Export Options</div>
+          <p>Save your prompts to Google Drive in various formats. 📤🗂️</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Character Section -->
+    <div id="character" class="help-section">
+      <h2>👤 Character Design Categories</h2>
+      <p>Define the physical and stylistic elements of your subject. Each category helps build a complete visual description! 🎨💫</p>
+
+      <div class="category-card">
+        <div class="category-title">💪 Body Type</div>
+        <div class="category-description">Overall physical build and body structure of your character.</div>
+        <div class="category-examples">
+          <div class="example-label">Examples:</div>
+          <div class="example-list">
+            • Athletic build with defined muscles 🏋️<br>
+            • Slim and elegant figure 💃<br>
+            • Stocky and robust frame 🛡️<br>
+            • Petite and delicate physique 🌸<br>
+            • Muscular and imposing stature 💪
+          </div>
+        </div>
+      </div>
+
+      <div class="category-card">
+        <div class="category-title">💇 Hair Style</div>
+        <div class="category-description">Hair color, length, style, and texture.</div>
+        <div class="category-examples">
+          <div class="example-label">Examples:</div>
+          <div class="example-list">
+            • Long flowing silver hair 🌊<br>
+            • Short spiky black hair ⚡<br>
+            • Curly auburn hair in loose waves 🔥<br>
+            • Braided golden hair with beads ✨<br>
+            • Sleek straight blue hair 💙
+          </div>
+        </div>
+      </div>
+
+      <div class="category-card">
+        <div class="category-title">👗 Clothing & Attire</div>
+        <div class="category-description">Outfit style, era, and distinctive clothing elements.</div>
+        <div class="category-examples">
+          <div class="example-label">Examples:</div>
+          <div class="example-list">
+            • Victorian-era dress with lace details 🎀<br>
+            • Modern casual streetwear 👕<br>
+            • Futuristic armor with neon accents 🤖<br>
+            • Traditional kimono with floral patterns 🌸<br>
+            • Medieval knight armor 🛡️
+          </div>
+        </div>
+      </div>
+
+      <div class="category-card">
+        <div class="category-title">🎭 Facial Features</div>
+        <div class="category-description">Eye color, facial structure, and distinctive features.</div>
+        <div class="category-examples">
+          <div class="example-label">Examples:</div>
+          <div class="example-list">
+            • Piercing blue eyes 👁️<br>
+            • Soft facial features with gentle smile 😊<br>
+            • Sharp angular jawline 💎<br>
+            • Warm amber eyes with golden flecks ✨<br>
+            • Distinctive scar across left cheek ⚔️
+          </div>
+        </div>
+      </div>
+
+      <div class="category-card">
+        <div class="category-title">✨ Special Features</div>
+        <div class="category-description">Unique or supernatural characteristics.</div>
+        <div class="category-examples">
+          <div class="example-label">Examples:</div>
+          <div class="example-list">
+            • Glowing magical tattoos 🌟<br>
+            • Ethereal wings 👼<br>
+            • Cybernetic enhancements 🦾<br>
+            • Elven pointed ears 🧝<br>
+            • Luminescent skin ✨
+          </div>
+        </div>
+      </div>
+
+      <div class="category-card">
+        <div class="category-title">🎨 Art Style</div>
+        <div class="category-description">Overall artistic rendering style for the character.</div>
+        <div class="category-examples">
+          <div class="example-label">Examples:</div>
+          <div class="example-list">
+            • Photorealistic rendering 📸<br>
+            • Anime/manga style 📺<br>
+            • Oil painting aesthetic 🎨<br>
+            • Watercolor illustration 🖌️<br>
+            • 3D rendered CGI 🎬
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Scene Section -->
+    <div id="scene" class="help-section">
+      <h2>🎬 Scene Settings Categories</h2>
+      <p>Control the environment, atmosphere, and mood of your image. These elements set the stage for your creative vision! 🌟💡</p>
+
+      <div class="category-card">
+        <div class="category-title">💡 Lighting</div>
+        <div class="category-description">Quality, direction, and mood of light in your scene.</div>
+        <div class="category-examples">
+          <div class="example-label">Examples:</div>
+          <div class="example-list">
+            • Soft natural sunlight filtering through trees 🌞<br>
+            • Dramatic chiaroscuro lighting 🎭<br>
+            • Neon lights reflecting on wet streets 🌃<br>
+            • Golden hour warm glow 🌅<br>
+            • Moonlight casting silver shadows 🌙
+          </div>
+        </div>
+      </div>
+
+      <div class="category-card">
+        <div class="category-title">🌲 Environment</div>
+        <div class="category-description">Physical location and setting of your scene.</div>
+        <div class="category-examples">
+          <div class="example-label">Examples:</div>
+          <div class="example-list">
+            • Dense enchanted forest 🌳<br>
+            • Urban cyberpunk cityscape 🏙️<br>
+            • Pristine mountain peak 🏔️<br>
+            • Underwater coral reef 🐠<br>
+            • Desert dunes at sunset 🏜️
+          </div>
+        </div>
+      </div>
+
+      <div class="category-card">
+        <div class="category-title">🎭 Mood & Atmosphere</div>
+        <div class="category-description">Emotional tone and feeling of the scene.</div>
+        <div class="category-examples">
+          <div class="example-label">Examples:</div>
+          <div class="example-list">
+            • Mysterious and ethereal 🌫️<br>
+            • Cheerful and vibrant 🎉<br>
+            • Tense and foreboding ⚡<br>
+            • Peaceful and serene 🕊️<br>
+            • Epic and dramatic ⚔️
+          </div>
+        </div>
+      </div>
+
+      <div class="category-card">
+        <div class="category-title">🌤️ Weather & Time</div>
+        <div class="category-description">Weather conditions and time of day.</div>
+        <div class="category-examples">
+          <div class="example-label">Examples:</div>
+          <div class="example-list">
+            • Misty morning fog 🌫️<br>
+            • Heavy rain with lightning ⛈️<br>
+            • Clear starry night 🌟<br>
+            • Golden sunset 🌅<br>
+            • Snowy blizzard ❄️
+          </div>
+        </div>
+      </div>
+
+      <div class="category-card">
+        <div class="category-title">🎨 Color Palette</div>
+        <div class="category-description">Overall color scheme and tonal quality.</div>
+        <div class="category-examples">
+          <div class="example-label">Examples:</div>
+          <div class="example-list">
+            • Warm earth tones 🟤<br>
+            • Cool blue and teal palette 🔵<br>
+            • Vibrant rainbow colors 🌈<br>
+            • Monochromatic black and white ⚫⚪<br>
+            • Pastel soft colors 🎀
+          </div>
+        </div>
+      </div>
+
+      <div class="category-card">
+        <div class="category-title">✨ Special Effects</div>
+        <div class="category-description">Magical, particle, or atmospheric effects.</div>
+        <div class="category-examples">
+          <div class="example-label">Examples:</div>
+          <div class="example-list">
+            • Floating magical particles ✨<br>
+            • Volumetric fog rays 🌟<br>
+            • Energy aura glow 💫<br>
+            • Lens flares and bokeh 📸<br>
+            • Smoke and mist effects 🌫️
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Camera Section -->
+    <div id="camera" class="help-section">
+      <h2>📸 Camera & Composition Categories</h2>
+      <p>Master the technical aspects of photography and cinematography to frame your vision perfectly! 🎥🎞️</p>
+
+      <div class="category-card">
+        <div class="category-title">📷 Camera Angle</div>
+        <div class="category-description">Viewpoint and perspective of the camera.</div>
+        <div class="category-examples">
+          <div class="example-label">Examples:</div>
+          <div class="example-list">
+            • Low angle looking up 👀<br>
+            • High angle bird's eye view 🦅<br>
+            • Eye level straight on 👁️<br>
+            • Dutch angle (tilted) 📐<br>
+            • Over the shoulder 👤
+          </div>
+        </div>
+      </div>
+
+      <div class="category-card">
+        <div class="category-title">🎬 Shot Type</div>
+        <div class="category-description">Framing distance from subject.</div>
+        <div class="category-examples">
+          <div class="example-label">Examples:</div>
+          <div class="example-list">
+            • Extreme close-up (ECU) 🔍<br>
+            • Close-up (CU) 👁️<br>
+            • Medium shot (MS) 🧍<br>
+            • Full body shot (FS) 🚶<br>
+            • Wide/establishing shot 🌄
+          </div>
+        </div>
+      </div>
+
+      <div class="category-card">
+        <div class="category-title">🔭 Lens Type</div>
+        <div class="category-description">Optical characteristics and focal length.</div>
+        <div class="category-examples">
+          <div class="example-label">Examples:</div>
+          <div class="example-list">
+            • 50mm standard lens 📸<br>
+            • Wide angle 24mm 🌄<br>
+            • Telephoto 200mm 🔭<br>
+            • Macro lens for details 🔍<br>
+            • Fisheye lens 🐟
+          </div>
+        </div>
+      </div>
+
+      <div class="category-card">
+        <div class="category-title">🎯 Focus & Depth</div>
+        <div class="category-description">Depth of field and focus points.</div>
+        <div class="category-examples">
+          <div class="example-label">Examples:</div>
+          <div class="example-list">
+            • Shallow depth of field (bokeh) ✨<br>
+            • Deep focus (everything sharp) 🔍<br>
+            • Selective focus on subject 👁️<br>
+            • Rack focus transition 🎬<br>
+            • Tilt-shift miniature effect 🏘️
+          </div>
+        </div>
+      </div>
+
+      <div class="category-card">
+        <div class="category-title">🎨 Composition Rules</div>
+        <div class="category-description">Framing techniques and visual balance.</div>
+        <div class="category-examples">
+          <div class="example-label">Examples:</div>
+          <div class="example-list">
+            • Rule of thirds 📐<br>
+            • Golden ratio spiral 🌀<br>
+            • Leading lines 〰️<br>
+            • Symmetrical balance ⚖️<br>
+            • Frame within frame 🖼️
+          </div>
+        </div>
+      </div>
+
+      <div class="category-card">
+        <div class="category-title">📹 Camera Movement</div>
+        <div class="category-description">Dynamic camera motion effects.</div>
+        <div class="category-examples">
+          <div class="example-label">Examples:</div>
+          <div class="example-list">
+            • Static locked shot 📸<br>
+            • Slow pan across scene 🎬<br>
+            • Dynamic tracking shot 🎥<br>
+            • Orbital rotation 🔄<br>
+            • Zoom in/out effect 🔍
+          </div>
+        </div>
+      </div>
+
+      <div class="category-card">
+        <div class="category-title">📊 Technical Settings</div>
+        <div class="category-description">Camera settings and image quality.</div>
+        <div class="category-examples">
+          <div class="example-label">Examples:</div>
+          <div class="example-list">
+            • High ISO grainy texture 📷<br>
+            • Long exposure light trails ✨<br>
+            • Fast shutter frozen motion ⚡<br>
+            • HDR high dynamic range 🌈<br>
+            • RAW unprocessed quality 💎
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Features Section -->
+    <div id="features" class="help-section">
+      <h2>✨ System Features</h2>
+
+      <div class="category-card">
+        <div class="category-title">🎯 Multi-Format Generation</div>
+        <div class="category-description">Generate prompts in multiple styles for different use cases:</div>
+        <div class="category-examples">
+          <div class="example-list">
+            • 📖 <strong>Narrative Format:</strong> Natural flowing description perfect for story-based prompts<br>
+            • 🔧 <strong>Technical Format:</strong> Structured breakdown by category for precise control<br>
+            • 🎭 <strong>Poetic Format:</strong> Artistic and evocative language for creative projects<br>
+            • 📝 <strong>Bullet Point:</strong> Concise list format for quick reference
+          </div>
+        </div>
+      </div>
+
+      <div class="category-card">
+        <div class="category-title">📥 Smart Import System</div>
+        <div class="category-description">Automatically organize prompts from AI generation tools:</div>
+        <div class="category-examples">
+          <div class="example-list">
+            • Paste raw AI prompts into RAW_AI_DATA sheet 📋<br>
+            • System automatically categorizes elements 🤖<br>
+            • Removes duplicates and organizes data 🗂️<br>
+            • Updates dropdown menus with new options ⬇️<br>
+            • Maintains clean, organized database 💾
+          </div>
+        </div>
+      </div>
+
+      <div class="category-card">
+        <div class="category-title">💾 Export Options</div>
+        <div class="category-description">Save your prompts in various formats:</div>
+        <div class="category-examples">
+          <div class="example-list">
+            • 📄 Export to Google Drive as text file<br>
+            • 📊 Save to dedicated Prompt Builder sheet<br>
+            • 📋 Copy to clipboard for immediate use<br>
+            • 🗂️ Organize in custom folders<br>
+            • 📚 Build prompt library for future projects
+          </div>
+        </div>
+      </div>
+
+      <div class="category-card">
+        <div class="category-title">🎨 Theme Customization</div>
+        <div class="category-description">Personalize your dashboard experience:</div>
+        <div class="category-examples">
+          <div class="example-list">
+            • 🌓 Light/Dark mode toggle<br>
+            • 🎨 Multiple color schemes<br>
+            • 🔊 Sound effects on/off<br>
+            • 💾 Preferences saved automatically<br>
+            • 📱 Responsive design for all devices
+          </div>
+        </div>
+      </div>
+
+      <div class="category-card">
+        <div class="category-title">🔍 Help System</div>
+        <div class="category-description">Built-in assistance and documentation:</div>
+        <div class="category-examples">
+          <div class="example-list">
+            • 💡 Hover tooltips for all categories<br>
+            • 📚 Comprehensive help documentation<br>
+            • 🎓 Examples for every option<br>
+            • 🔧 Troubleshooting guides<br>
+            • ❓ Context-sensitive help
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tips Section -->
+    <div id="tips" class="help-section">
+      <h2>💡 Pro Tips & Best Practices</h2>
+
+      <div class="tips-section">
+        <h3>🎨 Creating Great Prompts</h3>
+        <div class="tip-item"><strong>Start Broad, Then Refine:</strong> Begin with general elements (character type, environment) then add specific details.</div>
+        <div class="tip-item"><strong>Balance is Key:</strong> Don't overload with too many conflicting styles or elements. 3-5 well-chosen options work best.</div>
+        <div class="tip-item"><strong>Experiment with Combinations:</strong> Try unexpected pairings like "Victorian cyberpunk" or "watercolor photorealism" for unique results.</div>
+        <div class="tip-item"><strong>Use the Multi-Format Feature:</strong> Different AI generators respond better to different prompt styles. Try multiple formats!</div>
+        <div class="tip-item"><strong>Save Your Winners:</strong> When you create a great prompt, export it to build a library of successful combinations.</div>
+      </div>
+
+      <div class="tips-section">
+        <h3>🚀 Workflow Optimization</h3>
+        <div class="tip-item"><strong>Use Templates:</strong> Create base combinations for different project types (portraits, landscapes, action scenes) as starting points.</div>
+        <div class="tip-item"><strong>Organize Your Imports:</strong> When importing AI prompts, add descriptive notes to help categorize them properly.</div>
+        <div class="tip-item"><strong>Clear Selections Strategically:</strong> Use section-specific clear buttons to modify just one aspect without starting over.</div>
+        <div class="tip-item"><strong>Test Variations:</strong> Change one element at a time to understand how each category affects the final image.</div>
+        <div class="tip-item"><strong>Keep Notes:</strong> Use the Log sheet to track which combinations worked best for different AI generators.</div>
+      </div>
+
+      <div class="tips-section">
+        <h3>🎯 Technical Tips</h3>
+        <div class="tip-item"><strong>Camera Settings Matter:</strong> Technical details like lens type and depth of field can dramatically change results.</div>
+        <div class="tip-item"><strong>Lighting Sets Mood:</strong> The right lighting can transform the entire feel of your image. Experiment!</div>
+        <div class="tip-item"><strong>Composition Rules:</strong> Using established photography principles (rule of thirds, golden ratio) often yields better results.</div>
+        <div class="tip-item"><strong>Style Consistency:</strong> Match your art style choice across character, scene, and camera for cohesive results.</div>
+        <div class="tip-item"><strong>Reference Photos:</strong> Keep a collection of reference images that match your desired style for comparison.</div>
+      </div>
+
+      <div class="tips-section">
+        <h3>🛠️ Troubleshooting</h3>
+        <div class="tip-item"><strong>Dropdowns Empty?</strong> Run the diagnostics tool from the menu to refresh all categories.</div>
+        <div class="tip-item"><strong>Import Not Working?</strong> Ensure your RAW_AI_DATA sheet follows the correct format with proper headers.</div>
+        <div class="tip-item"><strong>Slow Performance?</strong> Clear your browser cache and refresh the dashboard. Large imports can temporarily slow things down.</div>
+        <div class="tip-item"><strong>Export Issues?</strong> Check your Google Drive permissions and ensure you have sufficient storage space.</div>
+        <div class="tip-item"><strong>Need Help?</strong> Use the debug tools in the menu to identify specific issues with data loading.</div>
+      </div>
+    </div>
+
+  </div>
+
+  <script>
+    /**
+     * Logic for switching between help sections.
+     * Handles tab active states and content visibility.
+     */
+    function showSection(sectionId) {
+      // Hide all sections
+      const sections = document.querySelectorAll('.help-section');
+      sections.forEach(section => section.classList.remove('active'));
+
+      // Remove active class from all tabs
+      const tabs = document.querySelectorAll('.tab-button');
+      tabs.forEach(tab => tab.classList.remove('active'));
+
+      // Show selected section
+      const targetSection = document.getElementById(sectionId);
+      if (targetSection) {
+        targetSection.classList.add('active');
+      }
+
+      // Add active class to clicked tab (via event bubbling check)
+      if (event && event.target) {
+        event.target.classList.add('active');
+      }
+
+      // Scroll to top of help container smoothly
+      const container = document.querySelector('.help-container');
+      if (container) {
+        container.scrollTop = 0;
+      }
+    }
+
+    /**
+     * Safely closes the dialog.
+     * Checks if running in Google Apps Script environment before calling host.close().
+     */
+    function safeClose() {
+      if (typeof google !== 'undefined' && google.script && google.script.host) {
+        google.script.host.close();
+      } else {
+        console.log("Close button clicked. (This would close the modal in Google Apps Script)");
+        // Fallback notification for testing outside of GAS
+        alert("Close button clicked!\n(In Google Apps Script, this will close the modal.)");
+      }
+    }
+
+    // Add smooth scroll behavior for internal links
+    document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+      anchor.addEventListener('click', function (e) {
+        e.preventDefault();
+        document.querySelector(this.getAttribute('href')).scrollIntoView({
+          behavior: 'smooth'
+        });
+      });
+    });
+  </script>
+</body>
+</html>

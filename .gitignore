@@ -22,3 +22,8 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Apps Script / tools ignores
+appscript/tools/out/
+appscript/.quarantine/
+.clasprc.json
