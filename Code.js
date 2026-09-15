@@ -27,10 +27,10 @@
 const CONFIG = {
   // Sheet Names - MUST MATCH YOUR ACTUAL GOOGLE SHEETS 📊
   SHEETS: {
-    CHARACTER: 'Character',       // live tab name (2026-09-11); legacy 'CHARACTER' resolved via SHEET_ALIASES
-    SCENE: 'Scene Settings',
-    CAMERA: 'Shots',
-    SHOTS: 'Shots',               // Backwards compatibility 🔄
+    CHARACTER: 'DB_Character',   // Canonical columnar tab
+    SCENE: 'DB_Scene',           // Canonical columnar tab
+    CAMERA: 'DB_Camera',         // Canonical columnar tab
+    SHOTS: 'DB_Camera',          // Backwards compatibility 🔄
     PROMPT_BUILDER: 'PROMPT_BUILDER',
     HELP: 'HELP_DB',
     ALIAS: 'ALIAS',
@@ -41,9 +41,12 @@ const CONFIG = {
 
   // 🔄 Alternate tab names accepted for each logical sheet (first match wins)
   SHEET_ALIASES: {
-    'Character': ['Character', 'CHARACTER'],
-    'Scene Settings': ['Scene Settings', 'SCENE', 'Scene'],
-    'Shots': ['Shots', 'CAMERA', 'Camera', 'SHOTS'],
+    'DB_Character': ['DB_Character', 'Character', 'CHARACTER', '📄 Character', '[X] 📄 Character', '[X] CHARACTER'],
+    'DB_Scene': ['DB_Scene', 'Scene Settings', 'SCENE', 'Scene', '📄 Scene Settings', '[X] 📄 Scene Settings', '[X] SCENE'],
+    'DB_Camera': ['DB_Camera', 'Shots', 'CAMERA', 'Camera', 'SHOTS', '📄 Shots', '[X] 📄 Shots', '[X] CAMERA'],
+    'Character': ['DB_Character', 'Character', 'CHARACTER', '📄 Character', '[X] 📄 Character'],
+    'Scene Settings': ['DB_Scene', 'Scene Settings', 'SCENE', 'Scene', '📄 Scene Settings', '[X] 📄 Scene Settings'],
+    'Shots': ['DB_Camera', 'Shots', 'CAMERA', 'Camera', 'SHOTS', '📄 Shots', '[X] 📄 Shots'],
     'History/Log': ['History/Log', 'Selections Log'],
     'Video': ['Video', 'VIDEO'],
     'PROMPT_BUILDER': ['PROMPT_BUILDER', 'AI ART PROMPT BUILDER', 'Prompt Builder', 'AI Art Prompt Builder', 'Prompt Studio']
@@ -108,34 +111,22 @@ const CONFIG = {
   SECTIONS: {
     CHARACTER: {
       key: 'CHARACTER',
-      name: '👤 CHARACTER DESIGN',
-      dbSheet: 'Character',
-      rangeStart: 'B11',
-      rangeEnd: 'D19',
-      categoryColumn: 'A',
-      headerRow: 10
+      name: '👤 Character Design',
+      dbSheet: 'DB_Character'
     },
     SCENE: {
       key: 'SCENE',
-      name: '🎬 SCENE SETTINGS',
-      dbSheet: 'Scene Settings',
-      rangeStart: 'B22',
-      rangeEnd: 'D27',
-      categoryColumn: 'A',
-      headerRow: 21
+      name: '🎬 Scene Settings',
+      dbSheet: 'DB_Scene'
     },
     CAMERA: {
       key: 'CAMERA',
-      name: '📸 CAMERA & COMPOSITION CONCEPT',
-      dbSheet: 'Shots',
-      rangeStart: 'B30',
-      rangeEnd: 'D50',
-      categoryColumn: 'A',
-      headerRow: 29
+      name: '📸 Camera & Composition',
+      dbSheet: 'DB_Camera'
     },
     VIDEO: {
       key: 'VIDEO',
-      name: '🎥 VIDEO MOTION',
+      name: '🎥 Video Motion',
       dbSheet: 'Video',
       rangeStart: null,
       rangeEnd: null,
@@ -147,19 +138,30 @@ const CONFIG = {
   // Default Help Entries 📖
   HELP_DEFAULT: {
     CHARACTER: {
-      'body type': 'Body Type: Overall physical build. Examples: slim, athletic, muscular. 💪',
-      'hair': 'Hair: Style, color, and length. Examples: long silver hair, short curly. 💇',
-      'clothing': 'Clothing: Outfit style and details. Examples: Victorian dress, casual wear. 👗'
+      'gender': 'Gender: Character representation (Male, Female). 👤',
+      'hair color': 'Hair Color: Color of hair. Examples: Black, Brown, Blonde, Purple. 💇',
+      'hair type': 'Hair Type: Style & cut. Examples: Straight, Wavy, Dreadlocks, Buzz Cut. ✂️',
+      'facial hair': 'Facial Hair: Beard/mustache style. Examples: None, Goatee, Full Beard. 🧔',
+      'skin tone': 'Skin Tone: Complexion. Examples: Pale, Fair, Medium, Olive, Dark. 🎨',
+      'body type': 'Body Type: Overall physical build. Examples: Slim, Athletic, Muscular, Plus-size. 💪',
+      'accessories': 'Accessories: Wearables & props. Examples: Glasses, Hat, Backpack, Sword. 🎒',
+      'outfit': 'Outfit: Wardrobe & attire. Examples: Cyberpunk, Victorian Dress, Adventurer. 👗'
     },
     SCENE: {
-      'lighting': 'Lighting: Mood and light quality. Examples: soft natural light, dramatic shadows. 💡',
-      'environment': 'Environment: Location setting. Examples: forest, urban street, studio. 🌲',
-      'mood': 'Mood: Emotional atmosphere. Examples: mysterious, cheerful, tense. 🎭'
+      'render type': 'Render Type: Visual medium. Examples: Cinematic 3D, Film Photography, Oil Painting. 🎨',
+      'style / genre': 'Style / Genre: Aesthetic genre. Examples: Realism, Sci-fi, Cyberpunk, Fantasy. 🌌',
+      'lighting': 'Lighting: Mood and light quality. Examples: Soft natural light, Golden hour, Neon glow. 💡',
+      'time of day': 'Time of Day: Sun & sky position. Examples: Dawn, Morning, Midday, Night. 🌅',
+      'weather effects': 'Weather Effects: Atmospheric condition. Examples: Fog, Rain, Wind, Snow. 🌧️',
+      'environment': 'Environment: Location setting. Examples: Forest, Vaporwave Mall, Ancient Ruins. 🌲'
     },
     CAMERA: {
-      'camera angle': 'Camera Angle: Viewpoint perspective. Examples: close-up, wide shot, birds eye. 📷',
-      'shot type': 'Shot Type: Framing choice. Examples: medium shot, extreme close-up. 🎬',
-      'lens': 'Lens: Optical characteristics. Examples: 50mm, wide angle, telephoto. 🔭'
+      'camera angle': 'Camera Angle: Viewpoint perspective. Examples: Close-up, Wide shot, Low angle. 📷',
+      'composition': 'Composition: Framing choice. Examples: Centered, Rule of thirds, Depth of field. 📐',
+      'effects': 'Effects: Dynamic visual phenomena. Examples: Sparks flying, Smoke swirling. ✨',
+      'action': 'Action: Poses & activities. Examples: Hacking a computer, Casting a spell. 🏃',
+      'experimental / unnatural': 'Experimental: Surreal elements. Examples: Injecting glowing serum. 🧪',
+      'cult / ritualistic': 'Cult / Ritualistic: Occult themes. Examples: Drawing pentagram in blood. 🕯️'
     }
   }
 };
@@ -265,6 +267,7 @@ function onOpen() {
       .addItem('📱 Open Compact Dashboard', 'showDashboardCompact')
       .addItem('📋 1-Click Copy Generated Prompt', 'showPromptCopyModal')
       .addSeparator()
+      .addItem('🚀 Reorganize Workbook to Columnar DBs', 'migrateToColumnarDBs')
       .addItem('✨ Setup / Rebuild In-Sheet Studio', 'setupPromptBuilderSheet')
       .addItem('🧹 Clear In-Sheet Selections', 'clearPromptBuilderSelections')
       .addItem('💾 Save In-Sheet Prompt to History Log', 'saveInSheetPromptToLog')
@@ -1836,27 +1839,30 @@ function setupPromptBuilderSheet() {
     
     sheet.setTabColor('#7c3aed');
     
-    // Clear all old data validations, merges, and contents across the entire sheet
+    // CRITICAL: Unfreeze and break apart any merges, then completely wipe the sheet clean
+    sheet.setFrozenRows(0);
+    sheet.setFrozenColumns(0);
+    const maxRows = sheet.getMaxRows();
+    const maxCols = sheet.getMaxColumns();
     try {
-      const maxRows = sheet.getMaxRows();
-      const maxCols = sheet.getMaxColumns();
+      sheet.getRange(1, 1, maxRows, maxCols).breakApart();
       sheet.getRange(1, 1, maxRows, maxCols).clearDataValidations();
-      sheet.getRange(1, 1, Math.min(maxRows, 50), Math.min(maxCols, 26)).breakApart();
-    } catch (e) {
-      console.log('clean preparation note: ' + e.message);
+      sheet.getRange(1, 1, maxRows, maxCols).clear();
+    } catch (cleanErr) {
+      console.log('clean preparation note: ' + cleanErr.message);
     }
     
     // Set column widths
     sheet.setColumnWidth(1, 35);  // Col A: Margin
-    sheet.setColumnWidth(2, 210); // Col B: Section
+    sheet.setColumnWidth(2, 220); // Col B: Section
     sheet.setColumnWidth(3, 230); // Col C: Category
-    sheet.setColumnWidth(4, 340); // Col D: Selected Option (Dropdown)
-    sheet.setColumnWidth(5, 320); // Col E: Guidance / Help
+    sheet.setColumnWidth(4, 350); // Col D: Selected Option (Dropdown)
+    sheet.setColumnWidth(5, 340); // Col E: Guidance / Help
     
     // 1. Header Title Banner (Row 1)
     sheet.getRange('B1:E1').merge()
       .setValue('🎨 AI ART PROMPT BUILDER — IN-SHEET STUDIO')
-      .setBackground('#4338ca')
+      .setBackground('#312e81')
       .setFontColor('#ffffff')
       .setFontWeight('bold')
       .setFontSize(13)
@@ -1867,11 +1873,6 @@ function setupPromptBuilderSheet() {
     // 2. Merged Prompt Box (Rows 2 to 3, Cols B to D) - Clean Prompt for Midjourney / Flux
     const promptRangeClean = sheet.getRange('B2:D3');
     promptRangeClean.merge();
-    promptRangeClean.setFormula(
-      '=IF(COUNTA(D8:D35)=0, ' +
-      '"✨ Pick dropdown options below in Column D — your composed prompt will appear here in real-time ready to copy!", ' +
-      'TEXTJOIN(", ", TRUE, D8:D35))'
-    );
     promptRangeClean.setBackground('#f8fafc')
       .setFontColor('#0f172a')
       .setFontWeight('bold')
@@ -1886,11 +1887,8 @@ function setupPromptBuilderSheet() {
     // 3. Row 4 (Cols B to D) - Prompt with Prefix
     const promptRangePrefix = sheet.getRange('B4:D4');
     promptRangePrefix.merge();
-    promptRangePrefix.setFormula(
-      '=IF(COUNTA(D8:D35)=0, "", "GENERATE AN IMAGE: " & B2)'
-    );
     promptRangePrefix.setBackground('#f1f5f9')
-      .setFontColor('#475569')
+      .setFontColor('#334155')
       .setFontWeight('bold')
       .setFontSize(10)
       .setWrap(true)
@@ -1918,7 +1916,7 @@ function setupPromptBuilderSheet() {
     // Row 6: Column Table Headers
     const headers = [['Section', 'Category', 'Select Option (Dropdown Menu)', 'Guidance / Examples']];
     sheet.getRange('B6:E6').setValues(headers)
-      .setBackground('#1e293b')
+      .setBackground('#0f172a')
       .setFontColor('#ffffff')
       .setFontWeight('bold')
       .setFontSize(10)
@@ -1929,7 +1927,7 @@ function setupPromptBuilderSheet() {
     // Row 7: Instruction divider
     sheet.getRange('B7:E7').merge()
       .setValue('👇 Click any green cell in Column D below to choose traits — Prompt auto-updates above in real-time 👇')
-      .setBackground('#f1f5f9')
+      .setBackground('#f8fafc')
       .setFontColor('#64748b')
       .setFontStyle('italic')
       .setFontSize(9)
@@ -1941,29 +1939,45 @@ function setupPromptBuilderSheet() {
     sheet.setFrozenRows(7);
     sheet.setFrozenColumns(0);
     
-    // Build curated rows directly from getSectionCategories
+    // Build curated rows directly from clean columnar DB sheets
     const sectionsToBuild = [
-      { key: 'CHARACTER', name: '👤 Character Design', icon: '👤', fallbackSheet: 'Character' },
-      { key: 'SCENE',     name: '🎬 Scene Settings',   icon: '🎬', fallbackSheet: 'Scene Settings' },
-      { key: 'CAMERA',    name: '📸 Camera & Composition', icon: '📸', fallbackSheet: 'Shots' }
+      { key: 'CHARACTER', name: '👤 Character Design', sheetName: 'DB_Character', fallback: 'Character', bg: '#eff6ff', font: '#1d4ed8' },
+      { key: 'SCENE',     name: '🎬 Scene Settings',   sheetName: 'DB_Scene',     fallback: 'Scene Settings', bg: '#ecfdf5', font: '#047857' },
+      { key: 'CAMERA',    name: '📸 Camera & Composition', sheetName: 'DB_Camera', fallback: 'Shots', bg: '#f5f3ff', font: '#6d28d9' }
     ];
     
     let currentRow = 8;
     
     sectionsToBuild.forEach(function(sec) {
-      const categories = getSectionCategories(sec.key);
-      const srcSheetName = CONFIG.SECTIONS[sec.key].dbSheet;
-      const srcSheet = getSheetByAnyName(ss, srcSheetName) || ss.getSheetByName(sec.fallbackSheet);
-      if (!srcSheet) return;
+      const srcSheet = getSheetByAnyName(ss, sec.sheetName) || ss.getSheetByName(sec.sheetName) || getSheetByAnyName(ss, sec.fallback);
+      if (!srcSheet) {
+        console.warn('⚠️ Source sheet not found for ' + sec.name);
+        return;
+      }
       
-      categories.forEach(function(cat) {
-        const catName = cat.name;
-        const colIndex = cat.src.col;
-        const validRowCount = (cat.values || []).length;
-        if (validRowCount === 0) return;
+      const lastCol = srcSheet.getLastColumn();
+      const lastRow = srcSheet.getLastRow();
+      if (lastCol < 1 || lastRow < 2) return;
+      
+      const colHeaders = srcSheet.getRange(1, 1, 1, lastCol).getValues()[0];
+      
+      for (let c = 0; c < lastCol; c++) {
+        const catName = String(colHeaders[c] || '').trim();
+        if (!catName || looksNumeric(catName) || catName.startsWith('#')) continue;
+        
+        // Count non-empty values down this column
+        const colVals = srcSheet.getRange(2, c + 1, lastRow - 1, 1).getValues();
+        let validRowCount = 0;
+        for (let r = 0; r < colVals.length; r++) {
+          const v = String(colVals[r][0] || '').trim();
+          if (v && !looksNumeric(v) && !v.startsWith('#') && v !== '0') {
+            validRowCount++;
+          }
+        }
+        if (validRowCount === 0) continue;
         
         // Data Validation Range for this column (row 2 down to validRowCount + 1)
-        const valueRange = srcSheet.getRange(2, colIndex, validRowCount, 1);
+        const valueRange = srcSheet.getRange(2, c + 1, validRowCount, 1);
         const rule = SpreadsheetApp.newDataValidation()
           .requireValueInRange(valueRange)
           .setAllowInvalid(true)
@@ -1971,7 +1985,8 @@ function setupPromptBuilderSheet() {
         
         sheet.setRowHeight(currentRow, 26);
         sheet.getRange(currentRow, 2).setValue(sec.name)
-          .setFontColor('#475569')
+          .setBackground(sec.bg)
+          .setFontColor(sec.font)
           .setFontWeight('bold')
           .setVerticalAlignment('middle');
         sheet.getRange(currentRow, 3).setValue(catName)
@@ -1995,28 +2010,40 @@ function setupPromptBuilderSheet() {
           .setVerticalAlignment('middle');
         
         currentRow++;
-      });
+      }
     });
     
-    // Add border to data table
-    if (currentRow > 8) {
-      sheet.getRange(8, 2, currentRow - 8, 4).setBorder(
+    const lastCategoryRow = currentRow - 1;
+    
+    // Set dynamic prompt formulas
+    if (lastCategoryRow >= 8) {
+      promptRangeClean.setFormula(
+        '=IF(COUNTA(D8:D' + lastCategoryRow + ')=0, ' +
+        '"✨ Pick dropdown options below in Column D — your composed prompt will appear here in real-time ready to copy!", ' +
+        'TEXTJOIN(", ", TRUE, D8:D' + lastCategoryRow + '))'
+      );
+      promptRangePrefix.setFormula(
+        '=IF(COUNTA(D8:D' + lastCategoryRow + ')=0, "", "GENERATE AN IMAGE: " & B2)'
+      );
+      
+      // Add border to data table
+      sheet.getRange(8, 2, lastCategoryRow - 7, 4).setBorder(
         true, true, true, true, true, true,
         '#e2e8f0', SpreadsheetApp.BorderStyle.SOLID
       );
     }
     
-    // Clear any leftover old rows if re-running
+    // Clear any leftover old rows below the data table
     const maxSheetRows = sheet.getMaxRows();
     if (maxSheetRows > currentRow) {
-      const leftover = maxSheetRows - currentRow;
+      const leftover = maxSheetRows - currentRow + 1;
       if (leftover > 0) {
-        sheet.getRange(currentRow, 1, leftover, sheet.getMaxColumns()).clear({ contentsOnly: true, validationsOnly: true });
+        sheet.getRange(currentRow, 1, leftover, sheet.getMaxColumns()).clear();
       }
     }
     
     safeToast_(ss, 'Prompt Builder studio is ready! 🎨 Click cell B2 and copy anytime.', '✅ Studio Configured', 4);
-    return { success: true, totalCategories: currentRow - 8 };
+    return { success: true, totalCategories: lastCategoryRow - 7 };
   } catch (error) {
     logError('setupPromptBuilderSheet', error);
     safeAlert_('❌ Error setting up Prompt Builder: ' + error.message);

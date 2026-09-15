@@ -44,8 +44,15 @@ function apiHandle_(e, method) {
         return apiJson_({ ok: true, action: 'archive_diff', data: apiArchiveDiff_(req.section) });
       case 'setup_sheet':
         return apiJson_({ ok: true, action: 'setup_sheet', data: setupPromptBuilderSheet() });
+      case 'inspect_sheets':
+        return apiJson_({ ok: true, action: 'inspect_sheets', data: apiInspectSheets_() });
+      case 'inspect_tab':
+        return apiJson_({ ok: true, action: 'inspect_tab', data: apiInspectTab_(e) });
+      case 'migrate_to_columnar':
+      case 'reorganize':
+        return apiJson_({ ok: true, action: 'migrate_to_columnar', data: migrateToColumnarDBs() });
       default:
-        return apiJson_({ ok: false, action: req.action, error: 'Unknown action. Use health | categories | prompt | setup_sheet' });
+        return apiJson_({ ok: false, action: req.action, error: 'Unknown action. Use health | categories | prompt | setup_sheet | inspect_sheets | inspect_tab | migrate_to_columnar' });
     }
   } catch (error) {
     logError('apiHandle_', error);
@@ -159,3 +166,72 @@ function apiJson_(payload) {
     .createTextOutput(JSON.stringify(payload))
     .setMimeType(ContentService.MimeType.JSON);
 }
+
+/**
+ * 🔍 Diagnostic inspector of all sheets in workbook.
+ */
+function apiInspectSheets_() {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const sheets = ss.getSheets();
+  return sheets.map(function(s) {
+    const lastRow = s.getLastRow();
+    const lastCol = s.getLastColumn();
+    let row1 = [];
+    let row2 = [];
+    let row3 = [];
+    let col1 = [];
+    if (lastRow >= 1 && lastCol >= 1) {
+      const sampleCols = Math.min(lastCol, 25);
+      row1 = s.getRange(1, 1, 1, sampleCols).getValues()[0].map(String);
+      if (lastRow >= 2) {
+        row2 = s.getRange(2, 1, 1, sampleCols).getValues()[0].map(String);
+      }
+      if (lastRow >= 3) {
+        row3 = s.getRange(3, 1, 1, sampleCols).getValues()[0].map(String);
+      }
+      const sampleRows = Math.min(lastRow, 25);
+      col1 = s.getRange(1, 1, sampleRows, 1).getValues().map(function(r) { return String(r[0]); });
+    }
+    return {
+      name: s.getName(),
+      index: s.getIndex(),
+      lastRow: lastRow,
+      lastCol: lastCol,
+      maxRows: s.getMaxRows(),
+      maxCols: s.getMaxColumns(),
+      row1: row1,
+      row2: row2,
+      row3: row3,
+      col1: col1
+    };
+  });
+}
+
+/**
+ * 🔎 Detailed tab inspection.
+ */
+function apiInspectTab_(e) {
+  const p = (e && e.parameter) || {};
+  const tabName = p.tab || 'Character';
+  const numRows = parseInt(p.rows || '15', 10);
+  const numCols = parseInt(p.cols || '25', 10);
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const s = ss.getSheetByName(tabName);
+  if (!s) return { error: 'Tab not found: ' + tabName };
+  const lastRow = s.getLastRow();
+  const lastCol = s.getLastColumn();
+  const rCount = Math.min(lastRow, numRows);
+  const cCount = Math.min(lastCol, numCols);
+  let grid = [];
+  if (rCount > 0 && cCount > 0) {
+    grid = s.getRange(1, 1, rCount, cCount).getValues();
+  }
+  return {
+    tab: tabName,
+    lastRow: lastRow,
+    lastCol: lastCol,
+    grid: grid
+  };
+}
+
+
