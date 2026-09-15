@@ -42,8 +42,10 @@ function apiHandle_(e, method) {
         return apiJson_(apiPrompt_(req.selections, req.formats));
       case 'archive_diff':
         return apiJson_({ ok: true, action: 'archive_diff', data: apiArchiveDiff_(req.section) });
+      case 'setup_sheet':
+        return apiJson_({ ok: true, action: 'setup_sheet', data: setupPromptBuilderSheet() });
       default:
-        return apiJson_({ ok: false, action: req.action, error: 'Unknown action. Use health | categories | prompt' });
+        return apiJson_({ ok: false, action: req.action, error: 'Unknown action. Use health | categories | prompt | setup_sheet' });
     }
   } catch (error) {
     logError('apiHandle_', error);

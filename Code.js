@@ -45,7 +45,8 @@ const CONFIG = {
     'Scene Settings': ['Scene Settings', 'SCENE', 'Scene'],
     'Shots': ['Shots', 'CAMERA', 'Camera', 'SHOTS'],
     'History/Log': ['History/Log', 'Selections Log'],
-    'Video': ['Video', 'VIDEO']
+    'Video': ['Video', 'VIDEO'],
+    'PROMPT_BUILDER': ['PROMPT_BUILDER', 'AI ART PROMPT BUILDER', 'Prompt Builder', 'AI Art Prompt Builder', 'Prompt Studio']
   },
 
   // Section Keys - Normalized uppercase for consistency 🔤
@@ -262,9 +263,11 @@ function onOpen() {
     ui.createMenu('🎨 AI Prompt Builder')
       .addItem('📊 Open Interactive Dashboard', 'showDashboard')
       .addItem('📱 Open Compact Dashboard', 'showDashboardCompact')
+      .addItem('📋 1-Click Copy Generated Prompt', 'showPromptCopyModal')
       .addSeparator()
-      .addItem('✨ Setup In-Sheet Prompt Studio', 'setupPromptBuilderSheet')
-      .addItem('🧹 Clear In-Sheet Dropdowns', 'clearPromptBuilderSelections')
+      .addItem('✨ Setup / Rebuild In-Sheet Studio', 'setupPromptBuilderSheet')
+      .addItem('🧹 Clear In-Sheet Selections', 'clearPromptBuilderSelections')
+      .addItem('💾 Save In-Sheet Prompt to History Log', 'saveInSheetPromptToLog')
       .addItem('🔄 Refresh All Validations & Caches', 'refreshAllDropdowns')
       .addSeparator()
       .addItem('📥 Setup Import Sheets', 'setupImportSheets')
@@ -1773,11 +1776,14 @@ function onEdit(e) {
     const sheet = e.range.getSheet();
     const sheetName = sheet.getName();
     
-    // If user edited a dropdown in PROMPT_BUILDER (Column D, Row 8+)
-    if (sheetName === CONFIG.SHEETS.PROMPT_BUILDER && e.range.getColumn() === 4 && e.range.getRow() >= 8) {
+    // Check if user edited a dropdown in PROMPT_BUILDER (Column D, Row 8+)
+    const isPbSheet = sheetName === CONFIG.SHEETS.PROMPT_BUILDER || 
+                      (CONFIG.SHEET_ALIASES.PROMPT_BUILDER && CONFIG.SHEET_ALIASES.PROMPT_BUILDER.includes(sheetName));
+    
+    if (isPbSheet && e.range.getColumn() === 4 && e.range.getRow() >= 8) {
       const val = e.range.getValue();
       if (val) {
-        SpreadsheetApp.getActiveSpreadsheet().toast('Prompt updated with "' + val + '" ✨ Ready to copy from top banner!', '🎨 Prompt Builder', 3);
+        SpreadsheetApp.getActiveSpreadsheet().toast('Prompt updated with "' + val + '" ✨ Click cell B2 and press Ctrl+C to copy!', '🎨 Prompt Studio', 3);
       }
     }
   } catch (err) {
@@ -1791,10 +1797,10 @@ function onEdit(e) {
 function clearPromptBuilderSelections() {
   try {
     const ss = SpreadsheetApp.getActiveSpreadsheet();
-    const sheet = ss.getSheetByName(CONFIG.SHEETS.PROMPT_BUILDER);
+    const sheet = getSheetByAnyName(ss, CONFIG.SHEETS.PROMPT_BUILDER);
     
     if (!sheet) {
-      throw new Error('PROMPT_BUILDER sheet not found. Run "Setup In-Sheet Prompt Studio" first.');
+      throw new Error('PROMPT_BUILDER sheet not found. Run "Setup / Rebuild In-Sheet Studio" first.');
     }
     
     const lastRow = sheet.getLastRow();
@@ -1807,6 +1813,7 @@ function clearPromptBuilderSelections() {
     return { success: true, message: '✨ Prompt builder selections cleared!' };
   } catch (error) {
     logError('clearPromptBuilderSelections', error);
+    SpreadsheetApp.getUi().alert('❌ Error: ' + error.message);
     return { success: false, message: error.message };
   }
 }
@@ -1814,31 +1821,41 @@ function clearPromptBuilderSelections() {
 /**
  * 🎨 Creates or updates the interactive in-sheet PROMPT_BUILDER studio sheet.
  * Features:
- * 1. Pinned top banner (Rows 1-7 frozen) with merged prompt display cell B2:D4.
- * 2. Dynamic formula: =IF(COUNTA(D8:D100)=0, "...", "GENERATE AN IMAGE: " & TEXTJOIN(", ", TRUE, FILTER(D8:D100, D8:D100<>"")))
+ * 1. Pinned top banner (Rows 1-7 frozen) with merged prompt display cell B2:D3 (Clean) and B4:D4 (Prefix).
+ * 2. Dynamic formula: =IF(COUNTA(D8:D40)=0, "...", TEXTJOIN(", ", TRUE, D8:D40))
  * 3. Native Google Sheets DataValidation dropdowns in Column D linking directly to Character, Scene Settings, and Shots.
- * 4. Pinned guidance and quick copy instructions in Column E.
+ * 4. Pinned guidance, 1-click copy box, and category examples in Column E.
  */
 function setupPromptBuilderSheet() {
   try {
     const ss = SpreadsheetApp.getActiveSpreadsheet();
-    let sheet = ss.getSheetByName(CONFIG.SHEETS.PROMPT_BUILDER);
+    let sheet = getSheetByAnyName(ss, CONFIG.SHEETS.PROMPT_BUILDER);
     if (!sheet) {
       sheet = ss.insertSheet(CONFIG.SHEETS.PROMPT_BUILDER, 0);
     }
     
     sheet.setTabColor('#7c3aed');
     
+    // Clear all old data validations, merges, and contents across the entire sheet
+    try {
+      const maxRows = sheet.getMaxRows();
+      const maxCols = sheet.getMaxColumns();
+      sheet.getRange(1, 1, maxRows, maxCols).clearDataValidations();
+      sheet.getRange(1, 1, Math.min(maxRows, 50), Math.min(maxCols, 26)).breakApart();
+    } catch (e) {
+      console.log('clean preparation note: ' + e.message);
+    }
+    
     // Set column widths
     sheet.setColumnWidth(1, 35);  // Col A: Margin
     sheet.setColumnWidth(2, 210); // Col B: Section
     sheet.setColumnWidth(3, 230); // Col C: Category
     sheet.setColumnWidth(4, 340); // Col D: Selected Option (Dropdown)
-    sheet.setColumnWidth(5, 300); // Col E: Guidance / Help
+    sheet.setColumnWidth(5, 320); // Col E: Guidance / Help
     
     // 1. Header Title Banner (Row 1)
     sheet.getRange('B1:E1').merge()
-      .setValue('🎨 AI ART PROMPT BUILDER — LIVE DYNAMIC STUDIO')
+      .setValue('🎨 AI ART PROMPT BUILDER — IN-SHEET STUDIO')
       .setBackground('#4338ca')
       .setFontColor('#ffffff')
       .setFontWeight('bold')
@@ -1847,30 +1864,45 @@ function setupPromptBuilderSheet() {
       .setVerticalAlignment('middle');
     sheet.setRowHeight(1, 38);
     
-    // 2. Merged Prompt Box (Rows 2 to 4, Cols B to D)
-    const promptRange = sheet.getRange('B2:D4');
-    promptRange.merge();
-    promptRange.setFormula(
-      '=IF(COUNTA(D8:D100)=0, ' +
-      '"✨ Select options from the dropdown menus below in Column D — your composed prompt will appear here in real-time ready to copy!", ' +
-      '"GENERATE AN IMAGE: " & TEXTJOIN(", ", TRUE, FILTER(D8:D100, D8:D100<>"")))'
+    // 2. Merged Prompt Box (Rows 2 to 3, Cols B to D) - Clean Prompt for Midjourney / Flux
+    const promptRangeClean = sheet.getRange('B2:D3');
+    promptRangeClean.merge();
+    promptRangeClean.setFormula(
+      '=IF(COUNTA(D8:D35)=0, ' +
+      '"✨ Pick dropdown options below in Column D — your composed prompt will appear here in real-time ready to copy!", ' +
+      'TEXTJOIN(", ", TRUE, D8:D35))'
     );
-    promptRange.setBackground('#f8fafc')
+    promptRangeClean.setBackground('#f8fafc')
       .setFontColor('#0f172a')
       .setFontWeight('bold')
       .setFontSize(11)
       .setWrap(true)
       .setHorizontalAlignment('left')
       .setVerticalAlignment('top');
-    promptRange.setBorder(true, true, true, true, false, false, '#6366f1', SpreadsheetApp.BorderStyle.SOLID_MEDIUM);
+    promptRangeClean.setBorder(true, true, true, true, false, false, '#6366f1', SpreadsheetApp.BorderStyle.SOLID_MEDIUM);
     sheet.setRowHeight(2, 28);
     sheet.setRowHeight(3, 28);
+    
+    // 3. Row 4 (Cols B to D) - Prompt with Prefix
+    const promptRangePrefix = sheet.getRange('B4:D4');
+    promptRangePrefix.merge();
+    promptRangePrefix.setFormula(
+      '=IF(COUNTA(D8:D35)=0, "", "GENERATE AN IMAGE: " & B2)'
+    );
+    promptRangePrefix.setBackground('#f1f5f9')
+      .setFontColor('#475569')
+      .setFontWeight('bold')
+      .setFontSize(10)
+      .setWrap(true)
+      .setHorizontalAlignment('left')
+      .setVerticalAlignment('middle');
+    promptRangePrefix.setBorder(true, true, true, true, false, false, '#cbd5e1', SpreadsheetApp.BorderStyle.SOLID);
     sheet.setRowHeight(4, 28);
     
     // Quick copy instructions box (E2:E4)
     const copyBox = sheet.getRange('E2:E4');
     copyBox.merge()
-      .setValue('📋 1-CLICK PROMPT COPY\n\n1. Click cell B2\n2. Press Ctrl+C\n3. Paste in Midjourney / Flux / DALL-E')
+      .setValue('📋 1-CLICK PROMPT COPY\n\n1. Click cell B2 (clean) or B4 (prefix)\n2. Press Ctrl+C\n3. Paste into Midjourney / Flux / DALL-E\n\n🧹 Reset: Menu → 🎨 AI Prompt Builder → 🧹 Clear In-Sheet Selections')
       .setBackground('#eef2ff')
       .setFontColor('#3730a3')
       .setFontWeight('bold')
@@ -1896,7 +1928,7 @@ function setupPromptBuilderSheet() {
     
     // Row 7: Instruction divider
     sheet.getRange('B7:E7').merge()
-      .setValue('👇 Click any cell in Column D below to open the dropdown menu and build your prompt 👇')
+      .setValue('👇 Click any green cell in Column D below to choose traits — Prompt auto-updates above in real-time 👇')
       .setBackground('#f1f5f9')
       .setFontColor('#64748b')
       .setFontStyle('italic')
@@ -1907,33 +1939,31 @@ function setupPromptBuilderSheet() {
     
     // Freeze top 7 rows so prompt stays pinned at the top while scrolling!
     sheet.setFrozenRows(7);
-    sheet.setFrozenColumns(1);
+    sheet.setFrozenColumns(0);
     
-    // Inspect source tabs and build the rows
+    // Build curated rows directly from getSectionCategories
     const sectionsToBuild = [
       { key: 'CHARACTER', name: '👤 Character Design', icon: '👤', fallbackSheet: 'Character' },
       { key: 'SCENE',     name: '🎬 Scene Settings',   icon: '🎬', fallbackSheet: 'Scene Settings' },
-      { key: 'CAMERA',    name: '📸 Camera & Shots',   icon: '📸', fallbackSheet: 'Shots' }
+      { key: 'CAMERA',    name: '📸 Camera & Composition', icon: '📸', fallbackSheet: 'Shots' }
     ];
     
     let currentRow = 8;
     
     sectionsToBuild.forEach(function(sec) {
-      const srcSheet = getSheetByAnyName(ss, CONFIG.SECTIONS[sec.key].dbSheet) || ss.getSheetByName(sec.fallbackSheet);
+      const categories = getSectionCategories(sec.key);
+      const srcSheetName = CONFIG.SECTIONS[sec.key].dbSheet;
+      const srcSheet = getSheetByAnyName(ss, srcSheetName) || ss.getSheetByName(sec.fallbackSheet);
       if (!srcSheet) return;
       
-      const lastCol = srcSheet.getLastColumn();
-      const lastRow = srcSheet.getLastRow();
-      if (lastCol < 1 || lastRow < 2) return;
-      
-      const sheetHeaders = srcSheet.getRange(1, 1, 1, lastCol).getValues()[0];
-      
-      for (let c = 0; c < lastCol; c++) {
-        const catName = String(sheetHeaders[c] || '').trim();
-        if (!catName || looksNumeric(catName) || catName.startsWith('#')) continue;
+      categories.forEach(function(cat) {
+        const catName = cat.name;
+        const colIndex = cat.src.col;
+        const validRowCount = (cat.values || []).length;
+        if (validRowCount === 0) return;
         
-        // Data Validation Range for this column (row 2 down to lastRow)
-        const valueRange = srcSheet.getRange(2, c + 1, lastRow - 1, 1);
+        // Data Validation Range for this column (row 2 down to validRowCount + 1)
+        const valueRange = srcSheet.getRange(2, colIndex, validRowCount, 1);
         const rule = SpreadsheetApp.newDataValidation()
           .requireValueInRange(valueRange)
           .setAllowInvalid(true)
@@ -1958,14 +1988,14 @@ function setupPromptBuilderSheet() {
         
         // Help guidance
         const helpMap = CONFIG.HELP_DEFAULT[sec.key] || {};
-        const helpText = helpMap[catName.toLowerCase()] || ('Select ' + catName + ' from ' + srcSheet.getName());
+        const helpText = helpMap[catName.toLowerCase()] || ('Pick ' + catName + ' (' + validRowCount + ' options)');
         sheet.getRange(currentRow, 5).setValue(helpText)
           .setFontColor('#64748b')
           .setFontSize(9)
           .setVerticalAlignment('middle');
         
         currentRow++;
-      }
+      });
     });
     
     // Add border to data table
@@ -1976,13 +2006,176 @@ function setupPromptBuilderSheet() {
       );
     }
     
-    ss.toast('Prompt Builder sheet setup complete! 🎨 Pinned at the top of your sheet tabs.', '✅ Success', 4);
+    // Clear any leftover old rows if re-running
+    const maxSheetRows = sheet.getMaxRows();
+    if (maxSheetRows > currentRow) {
+      const leftover = maxSheetRows - currentRow;
+      if (leftover > 0) {
+        sheet.getRange(currentRow, 1, leftover, sheet.getMaxColumns()).clear({ contentsOnly: true, validationsOnly: true });
+      }
+    }
+    
+    safeToast_(ss, 'Prompt Builder studio is ready! 🎨 Click cell B2 and copy anytime.', '✅ Studio Configured', 4);
     return { success: true, totalCategories: currentRow - 8 };
   } catch (error) {
     logError('setupPromptBuilderSheet', error);
-    SpreadsheetApp.getUi().alert('❌ Error setting up Prompt Builder: ' + error.message);
-    return { success: false, error: error.message };
+    safeAlert_('❌ Error setting up Prompt Builder: ' + error.message);
+    return { success: false, error: error.message, stack: error.stack };
   }
+}
+
+function safeAlert_(msg) {
+  try {
+    SpreadsheetApp.getUi().alert(msg);
+  } catch (e) {
+    console.warn('UI Alert not available: ' + msg);
+  }
+}
+
+function safeToast_(ss, msg, title, sec) {
+  try {
+    if (ss && ss.toast) ss.toast(msg, title || 'Notice', sec || 3);
+  } catch (e) {
+    console.log((title || '') + ': ' + msg);
+  }
+}
+
+/**
+ * 💾 Appends the current in-sheet prompt and selected options to History/Log
+ */
+function saveInSheetPromptToLog() {
+  try {
+    const ss = SpreadsheetApp.getActiveSpreadsheet();
+    const pbSheet = getSheetByAnyName(ss, CONFIG.SHEETS.PROMPT_BUILDER);
+    if (!pbSheet) {
+      SpreadsheetApp.getUi().alert('⚠️ Please run "Setup / Rebuild In-Sheet Studio" first.');
+      return;
+    }
+    
+    const promptText = String(pbSheet.getRange('B2').getValue() || '').trim();
+    if (!promptText || promptText.includes('Pick dropdown options')) {
+      SpreadsheetApp.getUi().alert('⚠️ No prompt selected. Please choose options in Column D first.');
+      return;
+    }
+    
+    const lastRow = pbSheet.getLastRow();
+    if (lastRow < 8) return;
+    
+    const tableData = pbSheet.getRange(8, 2, lastRow - 7, 3).getValues(); // Cols B, C, D
+    const selections = { character: {}, scene: {}, camera: {} };
+    
+    tableData.forEach(function(row) {
+      const secName = String(row[0] || '').toLowerCase();
+      const catName = String(row[1] || '').trim();
+      const val = String(row[2] || '').trim();
+      if (!val) return;
+      
+      if (secName.includes('character')) selections.character[catName] = val;
+      else if (secName.includes('scene')) selections.scene[catName] = val;
+      else if (secName.includes('camera') || secName.includes('shot')) selections.camera[catName] = val;
+    });
+    
+    const res = savePromptToLog(promptText, selections);
+    if (res && res.success) {
+      ss.toast('✅ Prompt and selections saved to History/Log! (' + res.rowsAppended + ' traits logged)', '💾 Saved', 4);
+    } else {
+      ss.toast('⚠️ Could not save to log: ' + (res ? res.message : 'unknown'), 'Error', 4);
+    }
+  } catch (error) {
+    logError('saveInSheetPromptToLog', error);
+    SpreadsheetApp.getUi().alert('❌ Error saving to log: ' + error.message);
+  }
+}
+
+/**
+ * 📋 Lightweight 1-Click Prompt Copy Modal
+ * Reads current composed prompt from PROMPT_BUILDER and provides instant 1-click clipboard copy
+ */
+function showPromptCopyModal() {
+  try {
+    const ss = SpreadsheetApp.getActiveSpreadsheet();
+    const sheet = getSheetByAnyName(ss, CONFIG.SHEETS.PROMPT_BUILDER);
+    let promptText = '';
+    
+    if (sheet) {
+      promptText = sheet.getRange('B2').getValue();
+    }
+    
+    if (!promptText || promptText.includes('Pick dropdown options') || promptText.includes('Select options')) {
+      const selections = loadDashboardSelections();
+      promptText = generatePromptFromSelections(selections);
+    }
+    
+    if (!promptText || promptText.startsWith('✨')) {
+      SpreadsheetApp.getUi().alert('💡 Please select at least one option in the dropdowns first before copying!');
+      return;
+    }
+
+    const htmlContent = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="utf-8">
+        <style>
+          body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; padding: 20px; background: #0f172a; color: #f8fafc; }
+          .box { background: #1e293b; border: 1px solid #334155; border-radius: 10px; padding: 16px; font-family: monospace; font-size: 13px; line-height: 1.5; color: #38bdf8; max-height: 200px; overflow-y: auto; white-space: pre-wrap; word-break: break-word; }
+          .btn { background: #6366f1; color: white; border: none; border-radius: 8px; padding: 12px 24px; font-size: 14px; font-weight: bold; cursor: pointer; margin-top: 16px; width: 100%; transition: background 0.2s; }
+          .btn:hover { background: #4f46e5; }
+          .status { margin-top: 10px; font-size: 13px; color: #4ade80; text-align: center; display: none; }
+        </style>
+      </head>
+      <body>
+        <h3 style="margin-top:0; color:#e2e8f0;">📋 1-Click Prompt Copy</h3>
+        <div class="box" id="ptext">\${escapeHtml_(promptText)}</div>
+        <button class="btn" id="copyBtn" onclick="doCopy()">📋 Copy Prompt to Clipboard</button>
+        <div class="status" id="stat">✅ Copied to clipboard! Ready to paste into Midjourney / Flux.</div>
+        <script>
+          function doCopy() {
+            const text = document.getElementById('ptext').innerText;
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+              navigator.clipboard.writeText(text).then(() => {
+                document.getElementById('stat').style.display = 'block';
+                document.getElementById('copyBtn').innerText = '✅ Copied!';
+                setTimeout(() => { google.script.host.close(); }, 1200);
+              }).catch(() => fallbackCopy(text));
+            } else {
+              fallbackCopy(text);
+            }
+          }
+          function fallbackCopy(text) {
+            const ta = document.createElement('textarea');
+            ta.value = text;
+            document.body.appendChild(ta);
+            ta.select();
+            document.execCommand('copy');
+            document.body.removeChild(ta);
+            document.getElementById('stat').style.display = 'block';
+            document.getElementById('copyBtn').innerText = '✅ Copied!';
+            setTimeout(() => { google.script.host.close(); }, 1200);
+          }
+          window.onload = function() { doCopy(); };
+        </script>
+      </body>
+      </html>
+    `;
+    
+    const output = HtmlService.createHtmlOutput(htmlContent)
+      .setWidth(520)
+      .setHeight(360);
+    
+    SpreadsheetApp.getUi().showModalDialog(output, '🎨 Prompt Ready to Copy');
+  } catch (error) {
+    logError('showPromptCopyModal', error);
+    SpreadsheetApp.getUi().alert('❌ Error: ' + error.message);
+  }
+}
+
+function escapeHtml_(text) {
+  return String(text)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
 }
 
 /**
