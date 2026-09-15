@@ -2,3 +2,4 @@ node_modules/
 .clasprc.json
 *.log
 tools/out/
+.quarantine/

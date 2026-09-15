@@ -108,7 +108,7 @@ const CONFIG = {
     CHARACTER: {
       key: 'CHARACTER',
       name: '👤 CHARACTER DESIGN',
-      dbSheet: 'CHARACTER',
+      dbSheet: 'Character',
       rangeStart: 'B11',
       rangeEnd: 'D19',
       categoryColumn: 'A',
@@ -117,7 +117,7 @@ const CONFIG = {
     SCENE: {
       key: 'SCENE',
       name: '🎬 SCENE SETTINGS',
-      dbSheet: 'SCENE',
+      dbSheet: 'Scene Settings',
       rangeStart: 'B22',
       rangeEnd: 'D27',
       categoryColumn: 'A',
@@ -126,7 +126,7 @@ const CONFIG = {
     CAMERA: {
       key: 'CAMERA',
       name: '📸 CAMERA & COMPOSITION CONCEPT',
-      dbSheet: 'CAMERA',
+      dbSheet: 'Shots',
       rangeStart: 'B30',
       rangeEnd: 'D50',
       categoryColumn: 'A',
@@ -257,8 +257,11 @@ function onOpen() {
       .addItem('📊 Open Interactive Dashboard', 'showDashboard')
       .addItem('📱 Open Compact Dashboard', 'showDashboardCompact')
       .addSeparator()
+      .addItem('✨ Setup In-Sheet Prompt Studio', 'setupPromptBuilderSheet')
+      .addItem('🧹 Clear In-Sheet Dropdowns', 'clearPromptBuilderSelections')
+      .addItem('🔄 Refresh All Validations & Caches', 'refreshAllDropdowns')
+      .addSeparator()
       .addItem('📥 Setup Import Sheets', 'setupImportSheets')
-      .addItem('🔄 Refresh All Validations', 'refreshAllDropdowns')
       .addItem('🎥 Setup Video Tab', 'seedVideoCategories')
       .addSubMenu(ui.createMenu('📜 Recover from 11/21/2025 archive')
         .addItem('👤 Character', 'stageArchiveCharacter')
@@ -782,12 +785,12 @@ function getSectionCategories(section) {
     // Process each column 🔄
     for (let col = 0; col < lastCol; col++) {
       const header = String(headers[col] || '').trim();
-      if (!header || looksNumeric(header)) continue;
+      if (!header || looksNumeric(header) || header.startsWith('#')) continue;
 
       const values = [];
       for (let row = 0; row < data.length; row++) {
         const cell = String(data[row][col] || '').trim();
-        if (!cell || looksNumeric(cell)) continue;
+        if (!cell || looksNumeric(cell) || cell.startsWith('#')) continue;
         if (!values.includes(cell)) values.push(cell);
       }
 
@@ -797,7 +800,7 @@ function getSectionCategories(section) {
         name: header,
         values: values,
         src: {
-          sheet: dbSheetName,
+          sheet: sheet.getName(),
           col: col + 1,
           rowStart: 2
         }
@@ -1701,7 +1704,28 @@ function logError(functionName, error) {
 }
 
 /**
- * 🧹 Clears PROMPT_BUILDER selections
+ * ⚡ Live trigger for interactive in-sheet updates
+ */
+function onEdit(e) {
+  try {
+    if (!e || !e.range) return;
+    const sheet = e.range.getSheet();
+    const sheetName = sheet.getName();
+    
+    // If user edited a dropdown in PROMPT_BUILDER (Column D, Row 8+)
+    if (sheetName === CONFIG.SHEETS.PROMPT_BUILDER && e.range.getColumn() === 4 && e.range.getRow() >= 8) {
+      const val = e.range.getValue();
+      if (val) {
+        SpreadsheetApp.getActiveSpreadsheet().toast('Prompt updated with "' + val + '" ✨ Ready to copy from top banner!', '🎨 Prompt Builder', 3);
+      }
+    }
+  } catch (err) {
+    console.warn('onEdit warning: ' + err.message);
+  }
+}
+
+/**
+ * 🧹 Clears PROMPT_BUILDER selections (preserving formulas, headers, and validation)
  */
 function clearPromptBuilderSelections() {
   try {
@@ -1709,20 +1733,194 @@ function clearPromptBuilderSelections() {
     const sheet = ss.getSheetByName(CONFIG.SHEETS.PROMPT_BUILDER);
     
     if (!sheet) {
-      throw new Error('PROMPT_BUILDER sheet not found.');
+      throw new Error('PROMPT_BUILDER sheet not found. Run "Setup In-Sheet Prompt Studio" first.');
     }
     
     const lastRow = sheet.getLastRow();
-    const lastCol = sheet.getLastColumn();
-    
-    if (lastRow > 1 && lastCol > 0) {
-      sheet.getRange(2, 1, lastRow - 1, lastCol).clearContent();
+    if (lastRow >= 8) {
+      // Clear column D (selections) from row 8 downwards
+      sheet.getRange(8, 4, lastRow - 7, 1).clearContent();
     }
     
-    return { success: true, message: '✨ Prompt builder cleared!' };
+    SpreadsheetApp.getActiveSpreadsheet().toast('All dropdown selections cleared! ✨', '🧹 Cleared', 3);
+    return { success: true, message: '✨ Prompt builder selections cleared!' };
   } catch (error) {
     logError('clearPromptBuilderSelections', error);
     return { success: false, message: error.message };
+  }
+}
+
+/**
+ * 🎨 Creates or updates the interactive in-sheet PROMPT_BUILDER studio sheet.
+ * Features:
+ * 1. Pinned top banner (Rows 1-7 frozen) with merged prompt display cell B2:D4.
+ * 2. Dynamic formula: =IF(COUNTA(D8:D100)=0, "...", "GENERATE AN IMAGE: " & TEXTJOIN(", ", TRUE, FILTER(D8:D100, D8:D100<>"")))
+ * 3. Native Google Sheets DataValidation dropdowns in Column D linking directly to Character, Scene Settings, and Shots.
+ * 4. Pinned guidance and quick copy instructions in Column E.
+ */
+function setupPromptBuilderSheet() {
+  try {
+    const ss = SpreadsheetApp.getActiveSpreadsheet();
+    let sheet = ss.getSheetByName(CONFIG.SHEETS.PROMPT_BUILDER);
+    if (!sheet) {
+      sheet = ss.insertSheet(CONFIG.SHEETS.PROMPT_BUILDER, 0);
+    }
+    
+    sheet.setTabColor('#7c3aed');
+    
+    // Set column widths
+    sheet.setColumnWidth(1, 35);  // Col A: Margin
+    sheet.setColumnWidth(2, 210); // Col B: Section
+    sheet.setColumnWidth(3, 230); // Col C: Category
+    sheet.setColumnWidth(4, 340); // Col D: Selected Option (Dropdown)
+    sheet.setColumnWidth(5, 300); // Col E: Guidance / Help
+    
+    // 1. Header Title Banner (Row 1)
+    sheet.getRange('B1:E1').merge()
+      .setValue('🎨 AI ART PROMPT BUILDER — LIVE DYNAMIC STUDIO')
+      .setBackground('#4338ca')
+      .setFontColor('#ffffff')
+      .setFontWeight('bold')
+      .setFontSize(13)
+      .setHorizontalAlignment('center')
+      .setVerticalAlignment('middle');
+    sheet.setRowHeight(1, 38);
+    
+    // 2. Merged Prompt Box (Rows 2 to 4, Cols B to D)
+    const promptRange = sheet.getRange('B2:D4');
+    promptRange.merge();
+    promptRange.setFormula(
+      '=IF(COUNTA(D8:D100)=0, ' +
+      '"✨ Select options from the dropdown menus below in Column D — your composed prompt will appear here in real-time ready to copy!", ' +
+      '"GENERATE AN IMAGE: " & TEXTJOIN(", ", TRUE, FILTER(D8:D100, D8:D100<>"")))'
+    );
+    promptRange.setBackground('#f8fafc')
+      .setFontColor('#0f172a')
+      .setFontWeight('bold')
+      .setFontSize(11)
+      .setWrap(true)
+      .setHorizontalAlignment('left')
+      .setVerticalAlignment('top');
+    promptRange.setBorder(true, true, true, true, false, false, '#6366f1', SpreadsheetApp.BorderStyle.SOLID_MEDIUM);
+    sheet.setRowHeight(2, 28);
+    sheet.setRowHeight(3, 28);
+    sheet.setRowHeight(4, 28);
+    
+    // Quick copy instructions box (E2:E4)
+    const copyBox = sheet.getRange('E2:E4');
+    copyBox.merge()
+      .setValue('📋 1-CLICK PROMPT COPY\n\n1. Click cell B2\n2. Press Ctrl+C\n3. Paste in Midjourney / Flux / DALL-E')
+      .setBackground('#eef2ff')
+      .setFontColor('#3730a3')
+      .setFontWeight('bold')
+      .setFontSize(9)
+      .setWrap(true)
+      .setHorizontalAlignment('center')
+      .setVerticalAlignment('middle');
+    copyBox.setBorder(true, true, true, true, false, false, '#c7d2fe', SpreadsheetApp.BorderStyle.SOLID);
+    
+    // Row 5: Spacing
+    sheet.setRowHeight(5, 12);
+    
+    // Row 6: Column Table Headers
+    const headers = [['Section', 'Category', 'Select Option (Dropdown Menu)', 'Guidance / Examples']];
+    sheet.getRange('B6:E6').setValues(headers)
+      .setBackground('#1e293b')
+      .setFontColor('#ffffff')
+      .setFontWeight('bold')
+      .setFontSize(10)
+      .setHorizontalAlignment('center')
+      .setVerticalAlignment('middle');
+    sheet.setRowHeight(6, 30);
+    
+    // Row 7: Instruction divider
+    sheet.getRange('B7:E7').merge()
+      .setValue('👇 Click any cell in Column D below to open the dropdown menu and build your prompt 👇')
+      .setBackground('#f1f5f9')
+      .setFontColor('#64748b')
+      .setFontStyle('italic')
+      .setFontSize(9)
+      .setHorizontalAlignment('center')
+      .setVerticalAlignment('middle');
+    sheet.setRowHeight(7, 24);
+    
+    // Freeze top 7 rows so prompt stays pinned at the top while scrolling!
+    sheet.setFrozenRows(7);
+    sheet.setFrozenColumns(1);
+    
+    // Inspect source tabs and build the rows
+    const sectionsToBuild = [
+      { key: 'CHARACTER', name: '👤 Character Design', icon: '👤', fallbackSheet: 'Character' },
+      { key: 'SCENE',     name: '🎬 Scene Settings',   icon: '🎬', fallbackSheet: 'Scene Settings' },
+      { key: 'CAMERA',    name: '📸 Camera & Shots',   icon: '📸', fallbackSheet: 'Shots' }
+    ];
+    
+    let currentRow = 8;
+    
+    sectionsToBuild.forEach(function(sec) {
+      const srcSheet = getSheetByAnyName(ss, CONFIG.SECTIONS[sec.key].dbSheet) || ss.getSheetByName(sec.fallbackSheet);
+      if (!srcSheet) return;
+      
+      const lastCol = srcSheet.getLastColumn();
+      const lastRow = srcSheet.getLastRow();
+      if (lastCol < 1 || lastRow < 2) return;
+      
+      const sheetHeaders = srcSheet.getRange(1, 1, 1, lastCol).getValues()[0];
+      
+      for (let c = 0; c < lastCol; c++) {
+        const catName = String(sheetHeaders[c] || '').trim();
+        if (!catName || looksNumeric(catName) || catName.startsWith('#')) continue;
+        
+        // Data Validation Range for this column (row 2 down to lastRow)
+        const valueRange = srcSheet.getRange(2, c + 1, lastRow - 1, 1);
+        const rule = SpreadsheetApp.newDataValidation()
+          .requireValueInRange(valueRange)
+          .setAllowInvalid(true)
+          .build();
+        
+        sheet.setRowHeight(currentRow, 26);
+        sheet.getRange(currentRow, 2).setValue(sec.name)
+          .setFontColor('#475569')
+          .setFontWeight('bold')
+          .setVerticalAlignment('middle');
+        sheet.getRange(currentRow, 3).setValue(catName)
+          .setFontColor('#0f172a')
+          .setFontWeight('medium')
+          .setVerticalAlignment('middle');
+        
+        const dropdownCell = sheet.getRange(currentRow, 4);
+        dropdownCell.setDataValidation(rule)
+          .setBackground('#f0fdf4')
+          .setFontColor('#15803d')
+          .setFontWeight('bold')
+          .setVerticalAlignment('middle');
+        
+        // Help guidance
+        const helpMap = CONFIG.HELP_DEFAULT[sec.key] || {};
+        const helpText = helpMap[catName.toLowerCase()] || ('Select ' + catName + ' from ' + srcSheet.getName());
+        sheet.getRange(currentRow, 5).setValue(helpText)
+          .setFontColor('#64748b')
+          .setFontSize(9)
+          .setVerticalAlignment('middle');
+        
+        currentRow++;
+      }
+    });
+    
+    // Add border to data table
+    if (currentRow > 8) {
+      sheet.getRange(8, 2, currentRow - 8, 4).setBorder(
+        true, true, true, true, true, true,
+        '#e2e8f0', SpreadsheetApp.BorderStyle.SOLID
+      );
+    }
+    
+    ss.toast('Prompt Builder sheet setup complete! 🎨 Pinned at the top of your sheet tabs.', '✅ Success', 4);
+    return { success: true, totalCategories: currentRow - 8 };
+  } catch (error) {
+    logError('setupPromptBuilderSheet', error);
+    SpreadsheetApp.getUi().alert('❌ Error setting up Prompt Builder: ' + error.message);
+    return { success: false, error: error.message };
   }
 }
 

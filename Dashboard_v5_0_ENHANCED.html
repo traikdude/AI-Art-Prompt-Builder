@@ -460,15 +460,22 @@
 
         <!-- ✨ Prompt Output Area -->
         <div class="prompt-output">
-            <h3 style="margin-bottom: var(--spacing-md); color: var(--dark);">
-                ✨ Generated Prompt
-            </h3>
-            <div class="prompt-display" id="prompt-display">
-                Your AI art prompt will appear here after you make selections and click "Generate Prompt"...
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--spacing-md); flex-wrap: wrap; gap: 8px;">
+                <h3 style="color: var(--dark);">
+                    ✨ Live Composed Prompt (Auto-Updates on Selection)
+                </h3>
+                <div style="display: flex; gap: 6px; flex-wrap: wrap;">
+                    <button class="btn" id="btn-mode-clean" onclick="setPromptMode('clean')" style="font-size: 0.8rem; padding: 5px 12px; background: #6366f1; color: white; border-radius: 6px;">🎯 Clean Tokens (Midjourney/Flux)</button>
+                    <button class="btn" id="btn-mode-structured" onclick="setPromptMode('structured')" style="font-size: 0.8rem; padding: 5px 12px; background: #e5e7eb; color: #374151; border-radius: 6px;">🏷️ Structured</button>
+                    <button class="btn" id="btn-mode-prefix" onclick="setPromptMode('prefix')" style="font-size: 0.8rem; padding: 5px 12px; background: #e5e7eb; color: #374151; border-radius: 6px;">⚡ With Prefix</button>
+                </div>
+            </div>
+            <div class="prompt-display" id="prompt-display" onclick="copyToClipboard()" title="Click anywhere inside to copy prompt to clipboard!" style="cursor: pointer; position: relative;">
+                ✨ Select options from the dropdown menus above — your composed prompt will appear here in real-time ready to copy!
             </div>
             <div class="prompt-actions">
-                <button class="btn btn-success" onclick="copyToClipboard()">
-                    📋 Copy to Clipboard
+                <button class="btn btn-success" onclick="copyToClipboard()" style="font-weight: bold;">
+                    📋 Copy Prompt to Clipboard
                 </button>
                 <button class="btn btn-info" onclick="saveToLog()">
                     💾 Save to Log
@@ -570,6 +577,25 @@
             updateSelectionCounters();
         }
 
+        let promptMode = 'clean'; // 'clean' | 'structured' | 'prefix'
+
+        function setPromptMode(mode) {
+            promptMode = mode;
+            ['clean', 'structured', 'prefix'].forEach(m => {
+                const btn = document.getElementById('btn-mode-' + m);
+                if (btn) {
+                    if (m === mode) {
+                        btn.style.background = '#6366f1';
+                        btn.style.color = '#ffffff';
+                    } else {
+                        btn.style.background = '#e5e7eb';
+                        btn.style.color = '#374151';
+                    }
+                }
+            });
+            generatePrompt(true);
+        }
+
         // 🖼️ Render Individual Category Section
         function renderCategorySection(section, icon) {
             const container = document.getElementById(`${section}-categories`);
@@ -582,6 +608,10 @@
             
             let html = '';
             for (const [category, values] of Object.entries(categories)) {
+                // Filter out broken formulas (#REF!) and empty strings
+                const cleanValues = (values || []).filter(v => v && !String(v).trim().startsWith('#'));
+                if (cleanValues.length === 0) continue;
+
                 html += `
                     <div class="category-group">
                         <label class="category-label">${icon} ${formatCategoryName(category)}</label>
@@ -590,7 +620,7 @@
                                     id="${section}-${category}" 
                                     onchange="handleSelection('${section}', '${category}', this.value)">
                                 <option value="">-- Select ${category} --</option>
-                                ${values.map(value => 
+                                ${cleanValues.map(value => 
                                     `<option value="${value}">${value}</option>`
                                 ).join('')}
                             </select>
@@ -602,7 +632,7 @@
             container.innerHTML = html;
         }
 
-        // 🎯 Handle Selection Changes
+        // 🎯 Handle Selection Changes (Auto-Updates Prompt in Real-Time!)
         function handleSelection(section, category, value) {
             if (value) {
                 selections[section][category] = value;
@@ -613,6 +643,7 @@
             
             updateSelectionCounters();
             updateStats();
+            generatePrompt(true); // ⚡ Immediate reactive composition!
         }
 
         // 📊 Update Selection Counters
@@ -633,61 +664,85 @@
             document.getElementById('camera-selections').textContent = stats.cameraSelections;
         }
 
-        // 🎨 Generate Prompt
-        function generatePrompt() {
-            const characterParts = Object.values(selections.character);
-            const sceneParts = Object.values(selections.scene);
-            const cameraParts = Object.values(selections.camera);
+        // 🎨 Generate Prompt (Supports Clean, Structured, and Prefix Modes)
+        function generatePrompt(isAuto) {
+            const characterParts = Object.values(selections.character || {}).filter(Boolean);
+            const sceneParts = Object.values(selections.scene || {}).filter(Boolean);
+            const cameraParts = Object.values(selections.camera || {}).filter(Boolean);
+            const totalCount = characterParts.length + sceneParts.length + cameraParts.length;
+            const display = document.getElementById('prompt-display');
             
-            if (characterParts.length === 0 && sceneParts.length === 0 && cameraParts.length === 0) {
-                showStatus('Please make at least one selection before generating a prompt', 'error');
+            if (totalCount === 0) {
+                display.textContent = '✨ Select options from the dropdown menus above — your composed prompt will appear here in real-time ready to copy!';
+                if (!isAuto) showStatus('Please make at least one selection before generating a prompt', 'error');
                 return;
             }
             
             let prompt = '';
-            
-            if (characterParts.length > 0) {
-                prompt += '👤 Character: ' + characterParts.join(', ') + '. ';
+            if (promptMode === 'clean') {
+                const allParts = [].concat(characterParts, sceneParts, cameraParts);
+                prompt = allParts.join(', ');
+            } else if (promptMode === 'structured') {
+                if (characterParts.length > 0) prompt += '👤 Character: ' + characterParts.join(', ') + '. ';
+                if (sceneParts.length > 0) prompt += '🎬 Scene: ' + sceneParts.join(', ') + '. ';
+                if (cameraParts.length > 0) prompt += '📸 Camera: ' + cameraParts.join(', ') + '.';
+            } else if (promptMode === 'prefix') {
+                const allParts = [].concat(characterParts, sceneParts, cameraParts);
+                prompt = 'GENERATE AN IMAGE: ' + allParts.join(', ');
             }
             
-            if (sceneParts.length > 0) {
-                prompt += '🎬 Scene: ' + sceneParts.join(', ') + '. ';
+            display.textContent = prompt.trim();
+            if (!isAuto) {
+                stats.totalPrompts++;
+                updateStats();
+                showStatus('Prompt generated successfully!', 'success');
             }
-            
-            if (cameraParts.length > 0) {
-                prompt += '📸 Camera: ' + cameraParts.join(', ') + '.';
-            }
-            
-            document.getElementById('prompt-display').textContent = prompt.trim();
-            stats.totalPrompts++;
-            updateStats();
-            showStatus('Prompt generated successfully!', 'success');
         }
 
         // 📋 Copy to Clipboard
         function copyToClipboard() {
-            const promptText = document.getElementById('prompt-display').textContent;
+            const promptText = document.getElementById('prompt-display').textContent.trim();
             
-            if (promptText.includes('will appear here')) {
-                showStatus('Generate a prompt first before copying', 'error');
+            if (!promptText || promptText.includes('Select options from the dropdown') || promptText.includes('will appear here')) {
+                showStatus('Please select some options first before copying!', 'error');
                 return;
             }
             
-            navigator.clipboard.writeText(promptText)
-                .then(() => {
-                    showStatus('Prompt copied to clipboard!', 'success');
-                })
-                .catch(err => {
-                    showStatus('Failed to copy: ' + err.message, 'error');
-                });
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+                navigator.clipboard.writeText(promptText)
+                    .then(() => {
+                        showStatus('✅ Prompt copied to clipboard! Ready to paste into Midjourney / Flux / DALL-E', 'success');
+                    })
+                    .catch(err => {
+                        fallbackCopy(promptText);
+                    });
+            } else {
+                fallbackCopy(promptText);
+            }
+        }
+
+        function fallbackCopy(text) {
+            const textarea = document.createElement('textarea');
+            textarea.value = text;
+            textarea.style.position = 'fixed';
+            textarea.style.opacity = '0';
+            document.body.appendChild(textarea);
+            textarea.select();
+            try {
+                document.execCommand('copy');
+                showStatus('✅ Prompt copied to clipboard! Ready to paste into Midjourney / Flux / DALL-E', 'success');
+            } catch (err) {
+                showStatus('Failed to copy: ' + err.message, 'error');
+            }
+            document.body.removeChild(textarea);
         }
 
         // 💾 Save to Log
         function saveToLog() {
-            const promptText = document.getElementById('prompt-display').textContent;
+            const promptText = document.getElementById('prompt-display').textContent.trim();
             
-            if (promptText.includes('will appear here')) {
-                showStatus('Generate a prompt first before saving', 'error');
+            if (!promptText || promptText.includes('Select options from the dropdown') || promptText.includes('will appear here')) {
+                showStatus('Select some options first before saving', 'error');
                 return;
             }
             
@@ -717,7 +772,7 @@
             });
             
             document.getElementById('prompt-display').textContent = 
-                'Your AI art prompt will appear here after you make selections and click "Generate Prompt"...';
+                '✨ Select options from the dropdown menus above — your composed prompt will appear here in real-time ready to copy!';
             
             updateSelectionCounters();
             showStatus('All selections cleared', 'info');

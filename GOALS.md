@@ -51,6 +51,7 @@ Classification: `COMMITTED GOAL` (Erik, 2026-09-11: "I'm going to resurrect it n
 | M3 | Video layer: `Video.js` seed migration (menu 🎥 Setup Video Tab), `generateVideoFormat` text + JSON, API `video` section (api2 @3), live-verified prompt 2026-09-12 03:05Z | Prompts describe motion | 🟡 code live; Video tab seeding needs one menu click |
 | M4 | Morrison1 integration: `species_catalog.py` fetches its Codex-still prompt from M2 | Two projects joined | ⬜ blocked on M2 |
 | M5 | Tool hooks: `tools/davinci_smoke.py` (exits 3 until Resolve installed), `tools/blender_smoke.py` (rendered 640x360 PNG, 128 KB, verified) | Post-production is scriptable | 🟡 Blender verified; DaVinci awaits install |
+| M6 | In-Sheet Dynamic Prompt Studio + Reactive Web Dashboard: eliminated `#REF!` camera bug by binding to `Shots`; created pinned `PROMPT_BUILDER` sheet with live `=TEXTJOIN(...)` formula and native dropdown validations; added real-time reactive composition, mode switching (Clean Tokens/Structured/Prefix), and click-to-copy in Dashboard | Live prompt composition everywhere | ✅ verified: pushed & deployed @5/@6 (2026-09-15) |
 
 ## ✅ Priority Work
 
