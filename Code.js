@@ -213,11 +213,15 @@ function validateSection(section) {
 
 /**
  * 🎨 Opens the enhanced AI Prompt Builder Dashboard v5.2.0
- * NOTE: HTML file MUST be named "Dashboard_v5_0_ENHANCED.html"
+ * NOTE: Uses HtmlService.createTemplateFromFile with server-side pre-injected
+ * category data for instant (0ms) dashboard opening!
  */
 function showDashboard() {
   try {
-    const html = HtmlService.createHtmlOutputFromFile('Dashboard_v5_0_ENHANCED')
+    const template = HtmlService.createTemplateFromFile('Dashboard_v5_0_ENHANCED');
+    // Preload categories so modal opens INSTANTLY with 0ms client waiting!
+    template.preloadedCategories = getDashboardData(false);
+    const html = template.evaluate()
       .setTitle('🎨 AI Prompt Builder v5.2.0')
       .setWidth(1400)
       .setHeight(900);
@@ -233,11 +237,13 @@ function showDashboard() {
 }
 
 /**
- * 📱 Opens compact sidebar version
+ * 📱 Opens compact sidebar version with preloaded categories
  */
 function showDashboardCompact() {
   try {
-    const html = HtmlService.createHtmlOutputFromFile('Dashboard_v5_0_ENHANCED')
+    const template = HtmlService.createTemplateFromFile('Dashboard_v5_0_ENHANCED');
+    template.preloadedCategories = getDashboardData(false);
+    const html = template.evaluate()
       .setTitle('🎨 AI Prompt Builder v5.2.0 (Compact)');
     SpreadsheetApp.getUi().showSidebar(html);
   } catch (error) {
@@ -777,21 +783,39 @@ function getSectionCategories(section) {
       return [];
     }
 
+    // ⚡ SPEED OPTIMIZATION 1: Identify non-empty, non-numeric, non-error header columns
+    // Scanning row 1 only (~1ms) prevents scanning hundreds of trailing blank/dump columns (e.g. 458 in Shots)
     const headers = sheet.getRange(1, 1, 1, lastCol).getValues()[0];
-    const data = sheet.getRange(2, 1, lastRow - 1, lastCol).getValues();
+    const validColIndices = [];
+    for (let c = 0; c < headers.length; c++) {
+      const h = String(headers[c] || '').trim();
+      if (h && !looksNumeric(h) && !h.startsWith('#')) {
+        validColIndices.push(c);
+      }
+    }
+
+    if (validColIndices.length === 0) {
+      return [];
+    }
+
+    // Determine the exact maximum column index needed so we only read active columns
+    const maxColNeeded = validColIndices[validColIndices.length - 1] + 1;
+    const data = sheet.getRange(2, 1, lastRow - 1, maxColNeeded).getValues();
 
     const categories = [];
 
-    // Process each column 🔄
-    for (let col = 0; col < lastCol; col++) {
+    // ⚡ SPEED OPTIMIZATION 2: Process only valid columns, using Set for O(1) deduplication
+    for (let i = 0; i < validColIndices.length; i++) {
+      const col = validColIndices[i];
       const header = String(headers[col] || '').trim();
-      if (!header || looksNumeric(header) || header.startsWith('#')) continue;
-
+      const seen = new Set();
       const values = [];
+
       for (let row = 0; row < data.length; row++) {
         const cell = String(data[row][col] || '').trim();
-        if (!cell || looksNumeric(cell) || cell.startsWith('#')) continue;
-        if (!values.includes(cell)) values.push(cell);
+        if (!cell || looksNumeric(cell) || cell.startsWith('#') || seen.has(cell)) continue;
+        seen.add(cell);
+        values.push(cell);
       }
 
       if (!values.length) continue;
@@ -807,8 +831,15 @@ function getSectionCategories(section) {
       });
     }
 
-    // Cache results 💾
-    cache.put(cacheKey, JSON.stringify(categories), CONFIG.CACHE.DURATION);
+    // Safe Cache (guard against CacheService 100KB limit) 💾
+    try {
+      const jsonStr = JSON.stringify(categories);
+      if (jsonStr.length < 95000) {
+        cache.put(cacheKey, jsonStr, CONFIG.CACHE.DURATION);
+      }
+    } catch (cacheErr) {
+      console.warn('Cache put skipped: ' + cacheErr.message);
+    }
     
     console.log(`✅ Loaded ${categories.length} categories for ${normalizedSection}`);
     return categories;
@@ -820,7 +851,7 @@ function getSectionCategories(section) {
 }
 
 /**
- * 🔄 Refreshes all dropdown caches
+ * 🔄 Refreshes all dropdown caches (CacheService + ScriptProperties)
  */
 function refreshAllDropdowns() {
   try {
@@ -830,12 +861,18 @@ function refreshAllDropdowns() {
       cache.remove(CONFIG.CACHE.KEYS.CATEGORIES + section);
       cache.remove(CONFIG.CACHE.KEYS.HELP + section);
     });
+
+    try {
+      PropertiesService.getScriptProperties().deleteProperty('COMPILED_CATEGORIES_V5');
+    } catch (e) {}
     
-    console.log('✅ All dropdown caches cleared!');
-    return { success: true, message: '🔄 Cache refreshed successfully!' };
+    // Immediately rebuild and return fresh data
+    const freshData = getDashboardData(true);
+    console.log('✅ All dropdown caches cleared and refreshed!');
+    return { success: true, message: '🔄 Cache refreshed successfully!', data: freshData };
   } catch (error) {
     logError('refreshAllDropdowns', error);
-    throw error;
+    return { success: false, error: error.message };
   }
 }
 
@@ -1216,9 +1253,26 @@ function saveMultiFormatToDrive(formats) {
 /**
  * 📊 Gets all dashboard category vocabularies (CHARACTER / SCENE / CAMERA)
  * Shape expected by Dashboard_v5_0_ENHANCED.html: { character: {catName: [values]}, scene: {...}, camera: {...} }
+ * Supports persistent ScriptProperties caching for blazing fast (<15ms) responses.
  */
-function getDashboardData() {
+function getDashboardData(forceRefresh) {
   try {
+    const props = PropertiesService.getScriptProperties();
+    const CACHE_PROP_KEY = 'COMPILED_CATEGORIES_V5';
+    
+    if (!forceRefresh) {
+      const saved = props.getProperty(CACHE_PROP_KEY);
+      if (saved) {
+        try {
+          const parsed = JSON.parse(saved);
+          if (parsed && parsed.character && Object.keys(parsed.character).length > 0) {
+            console.log('⚡ getDashboardData hit from ScriptProperties cache (<15ms)');
+            return parsed;
+          }
+        } catch (e) {}
+      }
+    }
+
     const sections = ['CHARACTER', 'SCENE', 'CAMERA'];
     const data = { character: {}, scene: {}, camera: {} };
 
@@ -1229,6 +1283,13 @@ function getDashboardData() {
         data[targetKey][category.name] = category.values;
       });
     });
+
+    // Save to persistent ScriptProperties (available instantly on future calls)
+    try {
+      props.setProperty(CACHE_PROP_KEY, JSON.stringify(data));
+    } catch (propErr) {
+      console.warn('Could not save to ScriptProperties: ' + propErr.message);
+    }
 
     return data;
   } catch (error) {

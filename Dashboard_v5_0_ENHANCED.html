@@ -517,12 +517,23 @@
 
     <!-- 🔧 JavaScript Logic -->
     <script>
-        // 🎯 CORRECTED SHEET CONFIGURATION - MATCHES YOUR ACTUAL SHEET NAMES
+        // ⚡ TIER 1: Server-Side Template Pre-injected Data (0ms latency!)
+        let serverPreloaded = null;
+        try {
+            serverPreloaded = <?!= (typeof preloadedCategories !== 'undefined' && preloadedCategories) ? JSON.stringify(preloadedCategories) : 'null' ?>;
+        } catch (e) {
+            console.log('Template preloaded data not available:', e);
+        }
+
+        // 🎯 Sheet Configuration
         const SHEET_CONFIG = {
-            CHARACTER: 'CHARACTER',  // ✅ Exact match
-            SCENE: 'SCENE',          // ✅ Exact match
-            CAMERA: 'CAMERA'         // ✅ Exact match
+            CHARACTER: 'CHARACTER',
+            SCENE: 'SCENE',
+            CAMERA: 'CAMERA'
         };
+
+        const LOCAL_CACHE_KEY = 'ai_art_prompt_categories_v5';
+        const API_ENDPOINT = 'https://script.google.com/macros/s/AKfycbyCjig1ociubkgrGw5P814n3aX1pQvzM4N5erySJWTJijL2oQW9ZfBZDUvwohLxHmyjNw/exec';
 
         // 🎯 Global State Management
         let categoriesData = {
@@ -544,29 +555,107 @@
             cameraSelections: 0
         };
 
-        // 🚀 Initialize Dashboard
+        // 🚀 Initialize Dashboard (Multi-Tier Blazing Fast Loading)
         window.onload = function() {
             console.log('🎨 Initializing AI Art Prompt Builder Dashboard v5.2.0...');
             console.log('📊 Sheet Configuration:', SHEET_CONFIG);
-            loadAllCategories();
+
+            // Tier 1: Instant Server Template Pre-Injection (0ms!)
+            if (serverPreloaded && serverPreloaded.character && Object.keys(serverPreloaded.character).length > 0) {
+                console.log('⚡ [Tier 1] Loaded from Server Template Pre-Injection (0ms)!', serverPreloaded);
+                categoriesData = serverPreloaded;
+                try { localStorage.setItem(LOCAL_CACHE_KEY, JSON.stringify(serverPreloaded)); } catch(e){}
+                renderAllCategories();
+                showStatus('⚡ Categories loaded instantly from template!', 'success');
+                return;
+            }
+
+            // Tier 2: Instant Client localStorage Cache (<5ms!)
+            try {
+                const cachedStr = localStorage.getItem(LOCAL_CACHE_KEY);
+                if (cachedStr) {
+                    const cachedData = JSON.parse(cachedStr);
+                    if (cachedData && cachedData.character && Object.keys(cachedData.character).length > 0) {
+                        console.log('⚡ [Tier 2] Loaded from localStorage cache (<5ms)!', cachedData);
+                        categoriesData = cachedData;
+                        renderAllCategories();
+                        showStatus('⚡ Loaded instantly from local cache (refreshing in background...)', 'info');
+                        // Silent background revalidation
+                        loadCategoriesFromBackend(true);
+                        return;
+                    }
+                }
+            } catch(e) {
+                console.warn('localStorage read error:', e);
+            }
+
+            // Tier 3: Fetch from Backend (with API fallback watchdog)
+            loadCategoriesFromBackend(false);
         };
 
-        // 📥 Load Categories from Backend
-        function loadAllCategories() {
-            showStatus('Loading categories from sheets: CHARACTER, SCENE, CAMERA...', 'info');
-            
-            google.script.run
-                .withSuccessHandler(function(data) {
-                    console.log('✅ Categories loaded:', data);
-                    categoriesData = data;
-                    renderAllCategories();
-                    showStatus('Categories loaded successfully!', 'success');
+        // 📥 Load Categories from Backend with Watchdog & Direct API Fallback
+        function loadCategoriesFromBackend(isSilent) {
+            if (!isSilent) {
+                showStatus('Loading categories from backend...', 'info');
+            }
+
+            let completed = false;
+
+            // Watchdog: If google.script.run hangs for > 5s, fallback to direct API endpoint!
+            const watchdogTimer = setTimeout(() => {
+                if (!completed && !isSilent) {
+                    console.warn('⚠️ google.script.run latency exceeded 5s, falling back to direct API endpoint...');
+                    fetchCategoriesViaApi(isSilent);
+                }
+            }, 5000);
+
+            if (typeof google !== 'undefined' && google.script && google.script.run) {
+                google.script.run
+                    .withSuccessHandler(function(data) {
+                        completed = true;
+                        clearTimeout(watchdogTimer);
+                        console.log('✅ [Tier 3] Categories loaded from backend:', data);
+                        if (data && data.character && Object.keys(data.character).length > 0) {
+                            categoriesData = data;
+                            try { localStorage.setItem(LOCAL_CACHE_KEY, JSON.stringify(data)); } catch(e){}
+                            renderAllCategories();
+                            if (!isSilent) showStatus('Categories loaded successfully! 🎯', 'success');
+                        } else if (!isSilent) {
+                            fetchCategoriesViaApi(false);
+                        }
+                    })
+                    .withFailureHandler(function(error) {
+                        completed = true;
+                        clearTimeout(watchdogTimer);
+                        console.error('❌ Error from google.script.run:', error);
+                        fetchCategoriesViaApi(isSilent);
+                    })
+                    .getDashboardData(false);
+            } else {
+                fetchCategoriesViaApi(isSilent);
+            }
+        }
+
+        // 🌐 Tier 4: Direct Web App API Fetch Fallback
+        function fetchCategoriesViaApi(isSilent) {
+            if (!isSilent) showStatus('Fetching categories via fast API endpoint...', 'info');
+            fetch(API_ENDPOINT + '?action=categories')
+                .then(res => res.json())
+                .then(res => {
+                    if (res && res.ok && res.data) {
+                        console.log('✅ [Tier 4] Categories loaded via API fetch:', res.data);
+                        categoriesData = res.data;
+                        try { localStorage.setItem(LOCAL_CACHE_KEY, JSON.stringify(res.data)); } catch(e){}
+                        renderAllCategories();
+                        if (!isSilent) showStatus('Categories synced via API endpoint! 🚀', 'success');
+                    } else if (!isSilent) {
+                        showStatus('Error loading categories from API', 'error');
+                    }
                 })
-                .withFailureHandler(function(error) {
-                    console.error('❌ Error loading categories:', error);
-                    showStatus('Error loading categories: ' + error.message, 'error');
-                })
-                .getDashboardData();
+                .catch(err => {
+                    console.error('❌ API fetch error:', err);
+                    if (!isSilent) showStatus('Could not load categories: ' + err.message, 'error');
+                });
         }
 
         // 🎨 Render All Category Sections
@@ -778,10 +867,31 @@
             showStatus('All selections cleared', 'info');
         }
 
-        // ↻ Refresh Categories
+        // ↻ Refresh Categories (Clears LocalStorage + Forces Backend Cache Rebuild)
         function refreshCategories() {
-            showStatus('Refreshing categories from CHARACTER, SCENE, CAMERA sheets...', 'info');
-            loadAllCategories();
+            showStatus('Refreshing all categories from live spreadsheet...', 'info');
+            try { localStorage.removeItem(LOCAL_CACHE_KEY); } catch(e){}
+            
+            if (typeof google !== 'undefined' && google.script && google.script.run) {
+                google.script.run
+                    .withSuccessHandler(function(result) {
+                        if (result && result.data && result.data.character) {
+                            categoriesData = result.data;
+                            try { localStorage.setItem(LOCAL_CACHE_KEY, JSON.stringify(result.data)); } catch(e){}
+                            renderAllCategories();
+                            showStatus('✅ Categories refreshed and cached successfully!', 'success');
+                        } else {
+                            loadCategoriesFromBackend(false);
+                        }
+                    })
+                    .withFailureHandler(function(error) {
+                        console.error('Refresh error:', error);
+                        loadCategoriesFromBackend(false);
+                    })
+                    .refreshAllDropdowns();
+            } else {
+                fetchCategoriesViaApi(false);
+            }
         }
 
         // 📤 Export Prompt
