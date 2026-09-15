@@ -51,8 +51,10 @@ function apiHandle_(e, method) {
       case 'migrate_to_columnar':
       case 'reorganize':
         return apiJson_({ ok: true, action: 'migrate_to_columnar', data: migrateToColumnarDBs() });
+      case 'archive_old_log':
+        return apiJson_({ ok: true, action: 'archive_old_log', data: archiveSelectionsLog() });
       default:
-        return apiJson_({ ok: false, action: req.action, error: 'Unknown action. Use health | categories | prompt | setup_sheet | inspect_sheets | inspect_tab | migrate_to_columnar' });
+        return apiJson_({ ok: false, action: req.action, error: 'Unknown action. Use health | categories | prompt | setup_sheet | inspect_sheets | inspect_tab | migrate_to_columnar | archive_old_log' });
     }
   } catch (error) {
     logError('apiHandle_', error);

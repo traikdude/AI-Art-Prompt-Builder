@@ -259,7 +259,8 @@ function deprecateLegacySheets_(ss) {
     '📄 Shots',
     'CHARACTER',
     'SCENE',
-    'CAMERA'
+    'CAMERA',
+    'Selections Log'
   ];
 
   legacyNames.forEach(function(oldName) {
@@ -277,6 +278,25 @@ function deprecateLegacySheets_(ss) {
       console.warn('Note renaming ' + oldName + ': ' + e.message);
     }
   });
+}
+
+/**
+ * 🏷️ Dedicated function to archive the legacy Selections Log tab.
+ */
+function archiveSelectionsLog() {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const oldSheet = ss.getSheetByName('Selections Log');
+  if (!oldSheet) {
+    return { ok: false, message: 'Tab "Selections Log" not found (may already be archived as [X] Selections Log)' };
+  }
+  const newName = '[X] Selections Log';
+  if (ss.getSheetByName(newName)) {
+    return { ok: false, message: 'Tab "' + newName + '" already exists' };
+  }
+  oldSheet.setName(newName);
+  oldSheet.setTabColor('#94a3b8');
+  console.log('🏷️ Archived legacy log sheet: Selections Log → ' + newName);
+  return { ok: true, oldName: 'Selections Log', newName: newName };
 }
 
 /**

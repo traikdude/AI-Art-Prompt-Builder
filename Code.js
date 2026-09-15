@@ -47,7 +47,7 @@ const CONFIG = {
     'Character': ['DB_Character', 'Character', 'CHARACTER', '📄 Character', '[X] 📄 Character'],
     'Scene Settings': ['DB_Scene', 'Scene Settings', 'SCENE', 'Scene', '📄 Scene Settings', '[X] 📄 Scene Settings'],
     'Shots': ['DB_Camera', 'Shots', 'CAMERA', 'Camera', 'SHOTS', '📄 Shots', '[X] 📄 Shots'],
-    'History/Log': ['History/Log', 'Selections Log'],
+    'History/Log': ['History/Log', '[X] Selections Log', 'Selections Log'],
     'Video': ['Video', 'VIDEO'],
     'PROMPT_BUILDER': ['PROMPT_BUILDER', 'AI ART PROMPT BUILDER', 'Prompt Builder', 'AI Art Prompt Builder', 'Prompt Studio']
   },
