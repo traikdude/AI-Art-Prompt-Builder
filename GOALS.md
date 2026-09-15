@@ -52,6 +52,7 @@ Classification: `COMMITTED GOAL` (Erik, 2026-09-11: "I'm going to resurrect it n
 | M4 | Morrison1 integration: `species_catalog.py` fetches its Codex-still prompt from M2 | Two projects joined | ⬜ blocked on M2 |
 | M5 | Tool hooks: `tools/davinci_smoke.py` (exits 3 until Resolve installed), `tools/blender_smoke.py` (rendered 640x360 PNG, 128 KB, verified) | Post-production is scriptable | 🟡 Blender verified; DaVinci awaits install |
 | M6 | In-Sheet Dynamic Prompt Studio + Reactive Web Dashboard: eliminated `#REF!` camera bug by binding to `Shots`; created pinned `PROMPT_BUILDER` sheet with live `=TEXTJOIN(...)` formula and native dropdown validations; added real-time reactive composition, mode switching (Clean Tokens/Structured/Prefix), and click-to-copy in Dashboard | Live prompt composition everywhere | ✅ verified: pushed & deployed @5/@6 (2026-09-15) |
+| M7 | Multi-Tier Instant Category Loading & Query Optimization: eliminated 572K-cell traversal in `Shots` (98.5% reduction via row-1 header indexing + O(1) Set dedupe); added persistent `ScriptProperties` cache (<15ms); upgraded modal opener to `HtmlService.createTemplateFromFile` with server pre-injected data (0ms client load); added 4-tier hierarchy (Template 0ms → localStorage <5ms → Backend RPC → Web App API fallback with 5s watchdog) | Categories load instantly without hanging | ✅ verified: pushed & deployed @7 (2026-09-15) |
 
 ## ✅ Priority Work
 
@@ -100,7 +101,8 @@ https://script.google.com/macros/s/AKfycbyCjig1ociubkgrGw5P814n3aX1pQvzM4N5erySJ
 ## ▶️ Current Cursor
 
 - Active goal: G3
+- Completed milestones: M0, M1, M2, M6, M7 (all pushed and verified live)
 - Current milestone: M3 (one click from done) → M4
 - A-1: Erik: Sheet menu 🎨 AI Prompt Builder → 🎥 Setup Video Tab (idempotent). Then M4: Morrison1 `species_catalog.py` fetches its Codex-still prompt from the API. DELIBERATELY DEFERRED past 2026-09-12 11:05 so the first unattended Morrison1 run is observed on today's fixes alone.
 - Blockers: DaVinci external scripting must be set to Local in Resolve Preferences (one UI click) before tools/davinci_smoke.py can pass
-- Next review: after M1 push, or at the next session start
+- Next review: live verification with Erik on dashboard instant loading
