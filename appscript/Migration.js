@@ -260,7 +260,8 @@ function deprecateLegacySheets_(ss) {
     'CHARACTER',
     'SCENE',
     'CAMERA',
-    'Selections Log'
+    'Selections Log',
+    'Image Prompts'
   ];
 
   legacyNames.forEach(function(oldName) {
@@ -297,6 +298,25 @@ function archiveSelectionsLog() {
   oldSheet.setTabColor('#94a3b8');
   console.log('🏷️ Archived legacy log sheet: Selections Log → ' + newName);
   return { ok: true, oldName: 'Selections Log', newName: newName };
+}
+
+/**
+ * 🏷️ Dedicated function to archive the legacy Image Prompts tab.
+ */
+function archiveImagePrompts() {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const oldSheet = ss.getSheetByName('Image Prompts');
+  if (!oldSheet) {
+    return { ok: false, message: 'Tab "Image Prompts" not found (may already be archived as [X] Image Prompts)' };
+  }
+  const newName = '[X] Image Prompts';
+  if (ss.getSheetByName(newName)) {
+    return { ok: false, message: 'Tab "' + newName + '" already exists' };
+  }
+  oldSheet.setName(newName);
+  oldSheet.setTabColor('#94a3b8');
+  console.log('🏷️ Archived legacy sheet: Image Prompts → ' + newName);
+  return { ok: true, oldName: 'Image Prompts', newName: newName };
 }
 
 /**

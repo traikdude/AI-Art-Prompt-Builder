@@ -229,6 +229,48 @@
             color: var(--primary);
         }
 
+        /* 🏷️ Multi-Select Tag Clouds */
+        .tag-cloud {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+            margin-top: 8px;
+            min-height: 0;
+        }
+
+        .tag-badge {
+            display: inline-flex;
+            align-items: center;
+            background: #e0e7ff;
+            color: #3730a3;
+            font-size: 0.78rem;
+            font-weight: 600;
+            padding: 4px 10px;
+            border-radius: 9999px;
+            border: 1px solid #c7d2fe;
+            box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+            animation: fadeIn 0.15s ease-in-out;
+        }
+
+        .tag-del {
+            margin-left: 6px;
+            background: transparent;
+            border: none;
+            color: #6366f1;
+            font-size: 1rem;
+            line-height: 1;
+            cursor: pointer;
+            padding: 0;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+        }
+
+        .tag-del:hover {
+            color: #ef4444;
+        }
+
         /* ✨ Prompt Output Area */
         .prompt-output {
             background: var(--light);
@@ -413,6 +455,25 @@
             </div>
         </div>
 
+        <!-- ⚡ 1-Click Creative Presets Bar -->
+        <div class="presets-bar" style="background: #ffffff; border-radius: var(--radius-md); padding: var(--spacing-md); margin-bottom: var(--spacing-lg); border: 2px solid #e0e7ff; box-shadow: 0 2px 4px rgba(0,0,0,0.03);">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; flex-wrap: wrap; gap: 6px;">
+                <div style="font-weight: 700; color: #1e1b4b; font-size: 0.9rem; display: flex; align-items: center; gap: 6px;">
+                    <span>⚡ 1-Click Quick Presets:</span>
+                    <span style="font-weight: normal; font-size: 0.78rem; color: #64748b;">Instantly picks 5–6 coordinated traits across Character, Scene & Camera</span>
+                </div>
+            </div>
+            <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+                <button type="button" class="btn" onclick="applyPreset('cyberpunk')" style="background: #0f172a; color: #38bdf8; border: 1px solid #0284c7; padding: 6px 12px; font-size: 0.8rem; font-weight: 600; border-radius: 6px; cursor: pointer;">🌆 Cyberpunk Noir</button>
+                <button type="button" class="btn" onclick="applyPreset('fantasy')" style="background: #fdf4ff; color: #c026d3; border: 1px solid #e879f9; padding: 6px 12px; font-size: 0.8rem; font-weight: 600; border-radius: 6px; cursor: pointer;">✨ Ethereal Fantasy</button>
+                <button type="button" class="btn" onclick="applyPreset('synthwave')" style="background: #311042; color: #f472b6; border: 1px solid #ec4899; padding: 6px 12px; font-size: 0.8rem; font-weight: 600; border-radius: 6px; cursor: pointer;">🚀 Retro Synthwave</button>
+                <button type="button" class="btn" onclick="applyPreset('scifi')" style="background: #091a28; color: #4ade80; border: 1px solid #22c55e; padding: 6px 12px; font-size: 0.8rem; font-weight: 600; border-radius: 6px; cursor: pointer;">🌌 Hyper Sci-Fi</button>
+                <button type="button" class="btn" onclick="applyPreset('anime')" style="background: #fff7ed; color: #ea580c; border: 1px solid #fb923c; padding: 6px 12px; font-size: 0.8rem; font-weight: 600; border-radius: 6px; cursor: pointer;">🏯 Cinematic Anime</button>
+                <button type="button" class="btn" onclick="applyPreset('gothic')" style="background: #18181b; color: #e4e4e7; border: 1px solid #71717a; padding: 6px 12px; font-size: 0.8rem; font-weight: 600; border-radius: 6px; cursor: pointer;">🕯️ Gothic Fantasy</button>
+                <button type="button" class="btn" onclick="applyRandomPreset()" style="background: #eef2ff; color: #4f46e5; border: 1px solid #818cf8; padding: 6px 12px; font-size: 0.8rem; font-weight: 700; border-radius: 6px; cursor: pointer;">🎲 Random Inspiration</button>
+            </div>
+        </div>
+
         <!-- 📊 Main Content Grid -->
         <div class="content">
             <!-- 👤 Character Section -->
@@ -466,16 +527,31 @@
                 </h3>
                 <div style="display: flex; gap: 6px; flex-wrap: wrap;">
                     <button class="btn" id="btn-mode-clean" onclick="setPromptMode('clean')" style="font-size: 0.8rem; padding: 5px 12px; background: #6366f1; color: white; border-radius: 6px;">🎯 Clean Tokens (Midjourney/Flux)</button>
+                    <button class="btn" id="btn-mode-card" onclick="setPromptMode('card')" style="font-size: 0.8rem; padding: 5px 12px; background: #e5e7eb; color: #374151; border-radius: 6px;">💬 Debt Dispute Card</button>
                     <button class="btn" id="btn-mode-structured" onclick="setPromptMode('structured')" style="font-size: 0.8rem; padding: 5px 12px; background: #e5e7eb; color: #374151; border-radius: 6px;">🏷️ Structured</button>
                     <button class="btn" id="btn-mode-prefix" onclick="setPromptMode('prefix')" style="font-size: 0.8rem; padding: 5px 12px; background: #e5e7eb; color: #374151; border-radius: 6px;">⚡ With Prefix</button>
                 </div>
             </div>
+            
+            <!-- 📏 Real-time Character Length & Safety Bar -->
+            <div id="char-limit-indicator" style="display: flex; gap: 8px; align-items: center; margin-bottom: var(--spacing-sm); flex-wrap: wrap; font-size: 0.8rem; font-weight: 600;">
+                <span id="char-counter-badge" style="background: #e0f2fe; color: #0369a1; padding: 4px 10px; border-radius: 6px; border: 1px solid #bae6fd;">📏 0 chars</span>
+                <span id="midjourney-limit-badge" style="background: #f0fdf4; color: #15803d; padding: 4px 10px; border-radius: 6px; border: 1px solid #bbf7d0;">Midjourney cap (1,000): 🟢 Safe</span>
+                <span id="discord-limit-badge" style="background: #f0fdf4; color: #15803d; padding: 4px 10px; border-radius: 6px; border: 1px solid #bbf7d0;">Discord cap (2,000): 🟢 Safe</span>
+            </div>
+
             <div class="prompt-display" id="prompt-display" onclick="copyToClipboard()" title="Click anywhere inside to copy prompt to clipboard!" style="cursor: pointer; position: relative;">
                 ✨ Select options from the dropdown menus above — your composed prompt will appear here in real-time ready to copy!
             </div>
             <div class="prompt-actions">
                 <button class="btn btn-success" onclick="copyToClipboard()" style="font-weight: bold;">
                     📋 Copy Prompt to Clipboard
+                </button>
+                <button class="btn" onclick="syncSelectionsToSheet()" style="background: #10b981; color: #ffffff; font-weight: bold;">
+                    📥 Apply to Sheet (Studio)
+                </button>
+                <button class="btn" onclick="sendToDiscordWebhook()" style="background: #5865F2; color: #ffffff; font-weight: bold;">
+                    🚀 Send to Discord / Webhook
                 </button>
                 <button class="btn btn-info" onclick="saveToLog()">
                     💾 Save to Log
@@ -666,11 +742,11 @@
             updateSelectionCounters();
         }
 
-        let promptMode = 'clean'; // 'clean' | 'structured' | 'prefix'
+        let promptMode = 'clean'; // 'clean' | 'card' | 'structured' | 'prefix'
 
         function setPromptMode(mode) {
             promptMode = mode;
-            ['clean', 'structured', 'prefix'].forEach(m => {
+            ['clean', 'card', 'structured', 'prefix'].forEach(m => {
                 const btn = document.getElementById('btn-mode-' + m);
                 if (btn) {
                     if (m === mode) {
@@ -701,19 +777,25 @@
                 const cleanValues = (values || []).filter(v => v && !String(v).trim().startsWith('#'));
                 if (cleanValues.length === 0) continue;
 
+                const catEsc = category.replace(/"/g, '&quot;');
                 html += `
                     <div class="category-group">
-                        <label class="category-label">${icon} ${formatCategoryName(category)}</label>
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+                            <label class="category-label" style="margin-bottom: 0;">${icon} ${formatCategoryName(category)}</label>
+                            <span class="badge-cat-count" id="count-${section}-${category}" style="font-size: 0.75rem; color: #6366f1; font-weight: 600;"></span>
+                        </div>
                         <div class="select-wrapper">
                             <select class="category-select" 
                                     id="${section}-${category}" 
-                                    onchange="handleSelection('${section}', '${category}', this.value)">
-                                <option value="">-- Select ${category} --</option>
-                                ${cleanValues.map(value => 
-                                    `<option value="${value}">${value}</option>`
-                                ).join('')}
+                                    onchange="handleDropdownChange('${section}', '${catEsc}', this)">
+                                <option value="">-- Add ${formatCategoryName(category)} --</option>
+                                ${cleanValues.map(value => {
+                                    const valEsc = String(value).replace(/"/g, '&quot;');
+                                    return `<option value="${valEsc}">${value}</option>`;
+                                }).join('')}
                             </select>
                         </div>
+                        <div class="tag-cloud" id="tags-${section}-${category}"></div>
                     </div>
                 `;
             }
@@ -721,28 +803,90 @@
             container.innerHTML = html;
         }
 
-        // 🎯 Handle Selection Changes (Auto-Updates Prompt in Real-Time!)
-        function handleSelection(section, category, value) {
-            if (value) {
-                selections[section][category] = value;
+        // 🎯 Handle Selection Changes (Multi-Select Tag Management)
+        function handleDropdownChange(section, category, selectEl) {
+            const val = selectEl.value;
+            if (!val) return;
+            
+            addSelection(section, category, val);
+            
+            // Reset dropdown back to placeholder so user can pick additional options!
+            selectEl.selectedIndex = 0;
+        }
+
+        function addSelection(section, category, val) {
+            if (!selections[section]) selections[section] = {};
+            if (!selections[section][category]) selections[section][category] = [];
+            
+            if (!selections[section][category].includes(val)) {
+                selections[section][category].push(val);
                 stats[`${section}Selections`]++;
-            } else {
-                delete selections[section][category];
             }
             
+            renderCategoryTags(section, category);
             updateSelectionCounters();
             updateStats();
             generatePrompt(true); // ⚡ Immediate reactive composition!
         }
 
-        // 📊 Update Selection Counters
+        function removeSelection(section, category, val) {
+            if (!selections[section] || !selections[section][category]) return;
+            
+            const idx = selections[section][category].indexOf(val);
+            if (idx !== -1) {
+                selections[section][category].splice(idx, 1);
+                if (selections[section][category].length === 0) {
+                    delete selections[section][category];
+                }
+                if (stats[`${section}Selections`] > 0) stats[`${section}Selections`]--;
+            }
+            
+            renderCategoryTags(section, category);
+            updateSelectionCounters();
+            updateStats();
+            generatePrompt(true);
+        }
+
+        function renderCategoryTags(section, category) {
+            const container = document.getElementById(`tags-${section}-${category}`);
+            const countEl = document.getElementById(`count-${section}-${category}`);
+            if (!container) return;
+            
+            const items = (selections[section] && selections[section][category]) || [];
+            
+            if (countEl) {
+                countEl.textContent = items.length > 0 ? `(${items.length} selected)` : '';
+            }
+            
+            if (items.length === 0) {
+                container.innerHTML = '';
+                return;
+            }
+            
+            container.innerHTML = items.map(item => {
+                const safeItem = String(item).replace(/\\/g, '\\\\').replace(/'/g, "\\'").replace(/"/g, '&quot;');
+                return `<span class="tag-badge">
+                    ${item}
+                    <button class="tag-del" type="button" title="Remove" onclick="removeSelection('${section}', '${category}', '${safeItem}')">&times;</button>
+                </span>`;
+            }).join('');
+        }
+
+        // 📊 Update Selection Counters (Multi-Select Item Counting)
         function updateSelectionCounters() {
-            document.getElementById('character-count').textContent = 
-                Object.keys(selections.character).length;
-            document.getElementById('scene-count').textContent = 
-                Object.keys(selections.scene).length;
-            document.getElementById('camera-count').textContent = 
-                Object.keys(selections.camera).length;
+            const countItems = (secObj) => {
+                if (!secObj) return 0;
+                let count = 0;
+                Object.values(secObj).forEach(val => {
+                    if (Array.isArray(val)) count += val.length;
+                    else if (val) count++;
+                });
+                return count;
+            };
+            
+            document.getElementById('character-count').textContent = countItems(selections.character);
+            document.getElementById('scene-count').textContent = countItems(selections.scene);
+            document.getElementById('camera-count').textContent = countItems(selections.camera);
         }
 
         // 📊 Update Statistics Display
@@ -753,38 +897,280 @@
             document.getElementById('camera-selections').textContent = stats.cameraSelections;
         }
 
-        // 🎨 Generate Prompt (Supports Clean, Structured, and Prefix Modes)
+        // 🔍 Flatten Tokens for Category Objects
+        function getSectionTokens(secObj) {
+            if (!secObj) return [];
+            const tokens = [];
+            Object.values(secObj).forEach(val => {
+                if (Array.isArray(val)) {
+                    val.forEach(v => { if (v && String(v).trim()) tokens.push(String(v).trim()); });
+                } else if (val && String(val).trim()) {
+                    tokens.push(String(val).trim());
+                }
+            });
+            return tokens;
+        }
+
+        // 🎨 Generate Prompt (Supports Clean, Debt Dispute Card, Structured, and Prefix Modes)
         function generatePrompt(isAuto) {
-            const characterParts = Object.values(selections.character || {}).filter(Boolean);
-            const sceneParts = Object.values(selections.scene || {}).filter(Boolean);
-            const cameraParts = Object.values(selections.camera || {}).filter(Boolean);
+            const characterParts = getSectionTokens(selections.character);
+            const sceneParts = getSectionTokens(selections.scene);
+            const cameraParts = getSectionTokens(selections.camera);
             const totalCount = characterParts.length + sceneParts.length + cameraParts.length;
             const display = document.getElementById('prompt-display');
             
             if (totalCount === 0) {
                 display.textContent = '✨ Select options from the dropdown menus above — your composed prompt will appear here in real-time ready to copy!';
+                updateCharCountIndicators('');
                 if (!isAuto) showStatus('Please make at least one selection before generating a prompt', 'error');
                 return;
             }
             
             let prompt = '';
+            const allParts = [].concat(characterParts, sceneParts, cameraParts);
+            
             if (promptMode === 'clean') {
-                const allParts = [].concat(characterParts, sceneParts, cameraParts);
                 prompt = allParts.join(', ');
+            } else if (promptMode === 'card') {
+                // 📋 Debt Dispute Multi-Line Card Format
+                prompt = '🎨 AI ART GENERATION PROMPT:\n';
+                if (characterParts.length > 0) prompt += '👤 CHARACTER: ' + characterParts.join(', ') + '\n';
+                if (sceneParts.length > 0) prompt += '🎬 SCENE: ' + sceneParts.join(', ') + '\n';
+                if (cameraParts.length > 0) prompt += '📸 CAMERA: ' + cameraParts.join(', ') + '\n';
+                prompt += '\n⚡ FULL COMMAND: GENERATE AN IMAGE: ' + allParts.join(', ');
             } else if (promptMode === 'structured') {
                 if (characterParts.length > 0) prompt += '👤 Character: ' + characterParts.join(', ') + '. ';
                 if (sceneParts.length > 0) prompt += '🎬 Scene: ' + sceneParts.join(', ') + '. ';
                 if (cameraParts.length > 0) prompt += '📸 Camera: ' + cameraParts.join(', ') + '.';
             } else if (promptMode === 'prefix') {
-                const allParts = [].concat(characterParts, sceneParts, cameraParts);
                 prompt = 'GENERATE AN IMAGE: ' + allParts.join(', ');
             }
             
             display.textContent = prompt.trim();
+            updateCharCountIndicators(prompt.trim());
             if (!isAuto) {
                 stats.totalPrompts++;
                 updateStats();
                 showStatus('Prompt generated successfully!', 'success');
+            }
+        }
+
+        // 📏 Update Real-Time Character Length & Limit Badges
+        function updateCharCountIndicators(text) {
+            const count = (text || '').length;
+            const counter = document.getElementById('char-counter-badge');
+            const mj = document.getElementById('midjourney-limit-badge');
+            const disc = document.getElementById('discord-limit-badge');
+
+            if (counter) counter.textContent = '📏 ' + count + ' chars';
+
+            if (mj) {
+                if (count === 0) {
+                    mj.style.background = '#f0fdf4';
+                    mj.style.color = '#15803d';
+                    mj.style.borderColor = '#bbf7d0';
+                    mj.textContent = 'Midjourney cap (1,000): ⚪ Awaiting Selection';
+                } else if (count <= 1000) {
+                    mj.style.background = '#f0fdf4';
+                    mj.style.color = '#15803d';
+                    mj.style.borderColor = '#bbf7d0';
+                    mj.textContent = 'Midjourney cap (1,000): 🟢 Safe (' + (1000 - count) + ' chars left)';
+                } else {
+                    mj.style.background = '#fef2f2';
+                    mj.style.color = '#b91c1c';
+                    mj.style.borderColor = '#fecaca';
+                    mj.textContent = 'Midjourney cap (1,000): ⚠️ Exceeds by ' + (count - 1000) + ' chars';
+                }
+            }
+
+            if (disc) {
+                if (count === 0) {
+                    disc.style.background = '#f0fdf4';
+                    disc.style.color = '#15803d';
+                    disc.style.borderColor = '#bbf7d0';
+                    disc.textContent = 'Discord cap (2,000): ⚪ Awaiting Selection';
+                } else if (count <= 2000) {
+                    disc.style.background = '#f0fdf4';
+                    disc.style.color = '#15803d';
+                    disc.style.borderColor = '#bbf7d0';
+                    disc.textContent = 'Discord cap (2,000): 🟢 Safe (' + (2000 - count) + ' chars left)';
+                } else {
+                    disc.style.background = '#fef2f2';
+                    disc.style.color = '#b91c1c';
+                    disc.style.borderColor = '#fecaca';
+                    disc.textContent = 'Discord cap (2,000): ⚠️ Exceeds by ' + (count - 2000) + ' chars';
+                }
+            }
+        }
+
+        // ═══════════════════════════════════════════════════════════════════════════
+        // ✨ PRESETS ENGINE (CLIENT-SIDE REACTIVE)
+        // ═══════════════════════════════════════════════════════════════════════════
+
+        const PRESETS = {
+            cyberpunk: {
+                name: 'Cyberpunk Noir',
+                icon: '🌆',
+                selections: {
+                    character: { 'Gender': ['Cyborg Detective'], 'Attire': ['Neon Trenchcoat'], 'Hair': ['Undercut Hologram'] },
+                    scene: { 'Setting': ['Rainy Neo-Tokyo Rooftop'], 'Lighting': ['Volumetric Neon Glow'], 'Atmosphere': ['Cyberpunk Dystopian'] },
+                    camera: { 'Shot Type': ['Cinematic Wide Angle'], 'Lens': ['Anamorphic Lens'] }
+                }
+            },
+            fantasy: {
+                name: 'Ethereal Fantasy',
+                icon: '✨',
+                selections: {
+                    character: { 'Gender': ['Elf Sorceress'], 'Attire': ['Flowing Celestial Silk'], 'Hair': ['Silver Braided'] },
+                    scene: { 'Setting': ['Enchanted Bioluminescent Forest'], 'Lighting': ['Golden Hour God Rays'], 'Atmosphere': ['Mystical Dreamscape'] },
+                    camera: { 'Shot Type': ['Medium Portrait'], 'Lens': ['Macro Bokeh Depth'] }
+                }
+            },
+            synthwave: {
+                name: 'Retro Synthwave',
+                icon: '🚀',
+                selections: {
+                    character: { 'Gender': ['Futuristic Pilot'], 'Attire': ['Chrome Leather Jacket'] },
+                    scene: { 'Setting': ['Endless Grid Horizon 1984'], 'Lighting': ['Purple Magenta Sunset'], 'Atmosphere': ['Retro 80s Nostalgia'] },
+                    camera: { 'Shot Type': ['Low Angle Hero Shot'], 'Lens': ['VHS Film Grain'] }
+                }
+            },
+            scifi: {
+                name: 'Hyperrealistic Sci-Fi',
+                icon: '🌌',
+                selections: {
+                    character: { 'Gender': ['Deep Space Astronaut'], 'Attire': ['High-Tech Exosuit'] },
+                    scene: { 'Setting': ['Orbital Space Station Over Earth'], 'Lighting': ['Harsh Solar Flare'], 'Atmosphere': ['Zero Gravity Cinematic'] },
+                    camera: { 'Shot Type': ['Ultra-Wide Establishing Shot'], 'Lens': ['IMAX 70mm Sharp'] }
+                }
+            },
+            anime: {
+                name: 'Cinematic Anime',
+                icon: '🏯',
+                selections: {
+                    character: { 'Gender': ['Samurai Wanderer'], 'Attire': ['Traditional Haori & Katana'] },
+                    scene: { 'Setting': ['Cherry Blossom Shrine in Wind'], 'Lighting': ['Soft Pastel Twilight'], 'Atmosphere': ['Studio Ghibli Aesthetic'] },
+                    camera: { 'Shot Type': ['Dynamic Action Pose'], 'Lens': ['Anime Shintaku Cel'] }
+                }
+            },
+            gothic: {
+                name: 'Gothic Dark Fantasy',
+                icon: '🕯️',
+                selections: {
+                    character: { 'Gender': ['Vampire Aristocrat'], 'Attire': ['Victorian Velvet Cape'] },
+                    scene: { 'Setting': ['Haunted Cathedral Ruins'], 'Lighting': ['Flickering Candlelight & Moonlight'], 'Atmosphere': ['Ominous Foggy Eldritch'] },
+                    camera: { 'Shot Type': ['Close-Up Dramatic Portrait'], 'Lens': ['Dark Chiaroscuro 35mm'] }
+                }
+            }
+        };
+
+        function applyPreset(presetKey) {
+            const preset = PRESETS[presetKey];
+            if (!preset) return;
+
+            // Clear current selections
+            selections = { character: {}, scene: {}, camera: {} };
+            document.querySelectorAll('.category-select').forEach(s => s.selectedIndex = 0);
+            document.querySelectorAll('.tag-cloud').forEach(t => t.innerHTML = '');
+            document.querySelectorAll('.badge-cat-count').forEach(b => b.textContent = '');
+
+            // Deep copy preset selections
+            for (let sec in preset.selections) {
+                selections[sec] = {};
+                for (let cat in preset.selections[sec]) {
+                    selections[sec][cat] = [].concat(preset.selections[sec][cat]);
+                    renderCategoryTags(sec, cat);
+                }
+            }
+
+            updateSelectionCounters();
+            updateStats();
+            generatePrompt(false);
+            showStatus(`${preset.icon} Preset "${preset.name}" applied successfully!`, 'success');
+        }
+
+        function applyRandomPreset() {
+            // Clear current selections
+            selections = { character: {}, scene: {}, camera: {} };
+            document.querySelectorAll('.category-select').forEach(s => s.selectedIndex = 0);
+            document.querySelectorAll('.tag-cloud').forEach(t => t.innerHTML = '');
+            document.querySelectorAll('.badge-cat-count').forEach(b => b.textContent = '');
+
+            let totalPicked = 0;
+            ['character', 'scene', 'camera'].forEach(sec => {
+                const cats = categoriesData[sec] || {};
+                const catNames = Object.keys(cats).filter(k => (cats[k] || []).length > 0);
+                if (catNames.length === 0) return;
+
+                // Pick 1-2 random categories from this section
+                const shuffled = catNames.sort(() => 0.5 - Math.random());
+                const pickedCats = shuffled.slice(0, Math.min(2, shuffled.length));
+
+                selections[sec] = {};
+                pickedCats.forEach(cat => {
+                    const vals = (cats[cat] || []).filter(v => v && !String(v).trim().startsWith('#'));
+                    if (vals.length > 0) {
+                        const randomVal = vals[Math.floor(Math.random() * vals.length)];
+                        selections[sec][cat] = [randomVal];
+                        renderCategoryTags(sec, cat);
+                        totalPicked++;
+                    }
+                });
+            });
+
+            updateSelectionCounters();
+            updateStats();
+            generatePrompt(false);
+            showStatus(`🎲 Random Inspiration loaded with ${totalPicked} traits!`, 'success');
+        }
+
+        // 🚀 Send to Discord / Local Agent Webhook
+        function sendToDiscordWebhook() {
+            const promptText = document.getElementById('prompt-display').textContent.trim();
+            if (!promptText || promptText.includes('Select options from the dropdown') || promptText.includes('will appear here')) {
+                showStatus('Please select some options or apply a preset before sending!', 'error');
+                return;
+            }
+
+            showStatus('🚀 Sending prompt to Discord / Webhook...', 'info');
+
+            if (typeof google !== 'undefined' && google.script && google.script.run) {
+                google.script.run
+                    .withSuccessHandler(function(res) {
+                        if (res && res.needUrl) {
+                            const inputUrl = prompt('Enter your Discord / Local AI Agent Webhook URL:');
+                            if (inputUrl && inputUrl.trim()) {
+                                google.script.run
+                                    .withSuccessHandler(function(saveRes) {
+                                        showStatus('✅ Webhook URL saved & prompt dispatched!', 'success');
+                                    })
+                                    .sendPromptToWebhook(promptText, inputUrl.trim());
+                            } else {
+                                showStatus('Webhook sending cancelled', 'info');
+                            }
+                        } else if (res && res.success) {
+                            showStatus('✅ ' + res.message, 'success');
+                        } else {
+                            showStatus('⚠️ ' + (res ? (res.message || res.error) : 'Failed to send'), 'error');
+                        }
+                    })
+                    .withFailureHandler(function(err) {
+                        showStatus('Error sending to webhook: ' + err.message, 'error');
+                    })
+                    .sendPromptToWebhook(promptText);
+            } else {
+                fetch(API_ENDPOINT + '?action=send_webhook&prompt=' + encodeURIComponent(promptText))
+                    .then(r => r.json())
+                    .then(res => {
+                        if (res && res.ok && res.data && res.data.success) {
+                            showStatus('✅ ' + res.data.message, 'success');
+                        } else {
+                            showStatus('⚠️ Webhook error: ' + (res.data ? res.data.message : 'failed'), 'error');
+                        }
+                    })
+                    .catch(err => {
+                        showStatus('API Webhook dispatch error: ' + err.message, 'error');
+                    });
             }
         }
 
@@ -847,6 +1233,50 @@
                 .savePromptToLog(promptText, selections);
         }
 
+        // 📥 Sync Selections directly into PROMPT_BUILDER Sheet Column D
+        function syncSelectionsToSheet() {
+            const hasSelections = (selections.character && Object.keys(selections.character).length > 0) ||
+                                  (selections.scene && Object.keys(selections.scene).length > 0) ||
+                                  (selections.camera && Object.keys(selections.camera).length > 0);
+            if (!hasSelections) {
+                showStatus('Please select some options first before applying to sheet!', 'error');
+                return;
+            }
+
+            showStatus('📥 Applying selections to in-sheet PROMPT_BUILDER...', 'info');
+
+            if (typeof google !== 'undefined' && google.script && google.script.run) {
+                google.script.run
+                    .withSuccessHandler(function(res) {
+                        if (res && res.success) {
+                            showStatus('✅ Applied ' + res.updatedCount + ' categories to PROMPT_BUILDER sheet!', 'success');
+                        } else {
+                            showStatus('⚠️ ' + (res ? res.message : 'Could not apply to sheet'), 'error');
+                        }
+                    })
+                    .withFailureHandler(function(err) {
+                        showStatus('Error applying to sheet: ' + err.message, 'error');
+                    })
+                    .applyDashboardSelectionsToSheet(selections);
+            } else {
+                fetch(API_ENDPOINT + '?action=apply_selections', {
+                    method: 'POST',
+                    body: JSON.stringify({ action: 'apply_selections', selections: selections })
+                })
+                .then(r => r.json())
+                .then(res => {
+                    if (res && res.ok && res.data && res.data.success) {
+                        showStatus('✅ Applied ' + res.data.updatedCount + ' categories to PROMPT_BUILDER sheet!', 'success');
+                    } else {
+                        showStatus('⚠️ ' + (res && res.data ? res.data.message : 'API sync failed'), 'error');
+                    }
+                })
+                .catch(err => {
+                    showStatus('API sync error: ' + err.message, 'error');
+                });
+            }
+        }
+
         // 🔄 Clear Selections
         function clearSelections() {
             selections = {
@@ -860,8 +1290,17 @@
                 select.selectedIndex = 0;
             });
             
+            // Clear all tag clouds and count badges
+            document.querySelectorAll('.tag-cloud').forEach(cloud => {
+                cloud.innerHTML = '';
+            });
+            document.querySelectorAll('.badge-cat-count').forEach(badge => {
+                badge.textContent = '';
+            });
+            
             document.getElementById('prompt-display').textContent = 
                 '✨ Select options from the dropdown menus above — your composed prompt will appear here in real-time ready to copy!';
+            updateCharCountIndicators('');
             
             updateSelectionCounters();
             showStatus('All selections cleared', 'info');

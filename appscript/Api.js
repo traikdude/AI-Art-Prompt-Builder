@@ -53,8 +53,30 @@ function apiHandle_(e, method) {
         return apiJson_({ ok: true, action: 'migrate_to_columnar', data: migrateToColumnarDBs() });
       case 'archive_old_log':
         return apiJson_({ ok: true, action: 'archive_old_log', data: archiveSelectionsLog() });
+      case 'archive_image_prompts':
+        return apiJson_({ ok: true, action: 'archive_image_prompts', data: archiveImagePrompts() });
+      case 'clean_tab_bar':
+        return apiJson_({ ok: true, action: 'clean_tab_bar', data: cleanTabBar() });
+      case 'clean_tab_bar_focus':
+        return apiJson_({ ok: true, action: 'clean_tab_bar_focus', data: cleanTabBarStudioFocus() });
+      case 'unhide_all_tabs':
+        return apiJson_({ ok: true, action: 'unhide_all_tabs', data: unhideAllTabs() });
+      case 'clear_selections':
+        return apiJson_({ ok: true, action: 'clear_selections', data: clearPromptBuilderSelections() });
+      case 'presets':
+        return apiJson_({ ok: true, action: 'presets', data: PRESETS });
+      case 'apply_preset':
+        return apiJson_({ ok: true, action: 'apply_preset', data: applyPresetToSheet(req.preset || (e && e.parameter && e.parameter.preset) || 'cyberpunk') });
+      case 'send_webhook':
+        return apiJson_({ ok: true, action: 'send_webhook', data: sendPromptToWebhook(req.promptText || (e && e.parameter && e.parameter.prompt), req.webhookUrl || (e && e.parameter && e.parameter.url)) });
+      case 'get_webhook':
+        return apiJson_({ ok: true, action: 'get_webhook', data: getDiscordWebhookUrl() });
+      case 'set_webhook':
+        return apiJson_({ ok: true, action: 'set_webhook', data: setDiscordWebhookUrl(req.webhookUrl || (e && e.parameter && e.parameter.url)) });
+      case 'apply_selections':
+        return apiJson_({ ok: true, action: 'apply_selections', data: applyDashboardSelectionsToSheet(req.selections || {}) });
       default:
-        return apiJson_({ ok: false, action: req.action, error: 'Unknown action. Use health | categories | prompt | setup_sheet | inspect_sheets | inspect_tab | migrate_to_columnar | archive_old_log' });
+        return apiJson_({ ok: false, action: req.action, error: 'Unknown action. Use health | categories | prompt | setup_sheet | inspect_sheets | inspect_tab | migrate_to_columnar | archive_old_log | clean_tab_bar | clean_tab_bar_focus | unhide_all_tabs | clear_selections | presets | apply_preset | send_webhook | get_webhook | set_webhook | apply_selections' });
     }
   } catch (error) {
     logError('apiHandle_', error);
@@ -197,6 +219,7 @@ function apiInspectSheets_() {
     return {
       name: s.getName(),
       index: s.getIndex(),
+      isHidden: s.isSheetHidden(),
       lastRow: lastRow,
       lastCol: lastCol,
       maxRows: s.getMaxRows(),

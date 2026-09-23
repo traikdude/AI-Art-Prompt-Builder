@@ -256,6 +256,188 @@ function showDashboardCompact() {
 }
 
 /**
+ * ⚡ Multi-Select Dropdown Handler & Interactive Live Trigger for PROMPT_BUILDER
+ * Allows selecting multiple options from native dropdowns in Column D.
+ * Appends new selections separated by commas; selecting an existing item toggles it off.
+ * Handles parenthetical traits (e.g. "Gas mask, Worn-out trench coat") safely without splitting inside parens.
+ */
+function onEdit(e) {
+  try {
+    if (!e || !e.range) return;
+    const range = e.range;
+    
+    // Guard against multi-cell bulk edits
+    if (range.getNumRows() > 1 || range.getNumColumns() > 1) return;
+    
+    const sheet = range.getSheet();
+    const sheetName = sheet.getName();
+    
+    // Check if user edited a dropdown in PROMPT_BUILDER
+    const isPbSheet = sheetName === CONFIG.SHEETS.PROMPT_BUILDER || 
+                      (CONFIG.SHEET_ALIASES && CONFIG.SHEET_ALIASES.PROMPT_BUILDER && CONFIG.SHEET_ALIASES.PROMPT_BUILDER.includes(sheetName));
+    if (!isPbSheet) return;
+    
+    const col = range.getColumn();
+    const row = range.getRow();
+    
+    // Column 4 is "Select Option (Dropdown Menu)", rows 8 through 28
+    if (col !== 4 || row < 8 || row > 28) return;
+    
+    const newValue = String(e.value !== undefined ? e.value : (range.getValue() || '')).trim();
+    const oldValue = String(e.oldValue || '').trim();
+    
+    // User deleted/cleared the cell with Delete/Backspace -> preserve blank
+    if (!newValue) return;
+    
+    // If cell was previously empty, Google Sheets set it to newValue.
+    if (!oldValue) {
+      SpreadsheetApp.getActiveSpreadsheet().toast(
+        'Selected: "' + newValue + '" ✨ Pick more from dropdown to append, or re-select to remove!',
+        '🎨 Multi-Select Studio',
+        3
+      );
+      return;
+    }
+    
+    // Parse existing items without splitting inside parentheses (e.g. "(Gas mask, Worn-out coat)")
+    let items = splitTraits_(oldValue);
+    const existingIndex = items.indexOf(newValue);
+    
+    if (existingIndex >= 0) {
+      // Toggle OFF: If already chosen, remove it!
+      items.splice(existingIndex, 1);
+    } else {
+      // Append: Add new option to list
+      items.push(newValue);
+    }
+    
+    if (items.length === 0) {
+      range.clearContent();
+      SpreadsheetApp.getActiveSpreadsheet().toast('Removed trait. Cell cleared.', '🎨 Multi-Select Studio', 3);
+    } else {
+      const finalValue = items.join(', ');
+      range.setValue(finalValue);
+      SpreadsheetApp.getActiveSpreadsheet().toast(
+        (existingIndex >= 0 ? 'Removed "' : 'Added "') + newValue + '" (' + items.length + ' traits in category)',
+        '🎨 Multi-Select Studio',
+        3
+      );
+    }
+  } catch (err) {
+    console.error('onEdit multi-select error: ' + err.message);
+  }
+}
+
+/**
+ * 🔍 Helper: Splits comma-separated traits while preserving commas enclosed in parentheses
+ * e.g. "Male, Apocalyptic Survivor (Gas mask, Worn-out trench coat), Cyberpunk"
+ * -> ["Male", "Apocalyptic Survivor (Gas mask, Worn-out trench coat)", "Cyberpunk"]
+ */
+function splitTraits_(str) {
+  if (!str) return [];
+  const results = [];
+  let current = '';
+  let parenDepth = 0;
+  for (let i = 0; i < str.length; i++) {
+    const char = str[i];
+    if (char === '(') parenDepth++;
+    else if (char === ')' && parenDepth > 0) parenDepth--;
+    
+    if (char === ',' && parenDepth === 0) {
+      if (current.trim()) results.push(current.trim());
+      current = '';
+    } else {
+      current += char;
+    }
+  }
+  if (current.trim()) results.push(current.trim());
+  return results;
+}
+
+/**
+ * 📱 Opens the interactive Multi-Select Trait Studio sidebar
+ * Provides checkboxes for every category across Character, Scene, and Camera!
+ */
+function showMultiSelectPicker() {
+  try {
+    const template = HtmlService.createTemplateFromFile('Dashboard_v5_0_ENHANCED');
+    template.preloadedCategories = getDashboardData(false);
+    const html = template.evaluate()
+      .setTitle('🎨 Multi-Select Trait Studio (v5.2.0)');
+    SpreadsheetApp.getUi().showSidebar(html);
+  } catch (error) {
+    logError('showMultiSelectPicker', error);
+    safeAlert_('❌ Error opening Multi-Select Studio: ' + error.message);
+  }
+}
+
+/**
+ * 📥 Pushes multi-select choices from Web App / Sidebar into PROMPT_BUILDER Column D
+ * @param {Object} selections Map of section -> category -> array of strings
+ */
+function applyDashboardSelectionsToSheet(selections) {
+  try {
+    const ss = SpreadsheetApp.getActiveSpreadsheet();
+    const sheet = getSheetByAnyName(ss, CONFIG.SHEETS.PROMPT_BUILDER);
+    if (!sheet) {
+      return { success: false, message: 'PROMPT_BUILDER sheet not found' };
+    }
+    
+    const maxRows = sheet.getLastRow();
+    let updatedCount = 0;
+    
+    for (let r = 8; r <= 28 && r <= maxRows; r++) {
+      const secText = String(sheet.getRange(r, 2).getValue() || '').toLowerCase();
+      const catText = String(sheet.getRange(r, 3).getValue() || '').trim();
+      
+      let sectionKey = null;
+      if (secText.includes('character')) sectionKey = 'character';
+      else if (secText.includes('scene')) sectionKey = 'scene';
+      else if (secText.includes('camera') || secText.includes('shot')) sectionKey = 'camera';
+      
+      if (sectionKey && selections && selections[sectionKey]) {
+        for (const [catName, items] of Object.entries(selections[sectionKey])) {
+          if (catName.toLowerCase() === catText.toLowerCase() || catText.toLowerCase().includes(catName.toLowerCase())) {
+            const valStr = Array.isArray(items) ? items.join(', ') : String(items || '');
+            sheet.getRange(r, 4).setValue(valStr);
+            updatedCount++;
+            break;
+          }
+        }
+      }
+    }
+    
+    safeToast_(ss, '📥 Synced ' + updatedCount + ' categories to PROMPT_BUILDER!', '🎨 Studio Synced', 4);
+    return { success: true, updatedCount: updatedCount };
+  } catch (error) {
+    logError('applyDashboardSelectionsToSheet', error);
+    return { success: false, error: error.message };
+  }
+}
+
+/**
+ * ⚡ Optional: Sets up an installable edit trigger as fallback if simple onEdit is restricted
+ */
+function setupInstallableEditTrigger() {
+  try {
+    const ss = SpreadsheetApp.getActiveSpreadsheet();
+    const triggers = ScriptApp.getUserTriggers(ss);
+    const hasTrigger = triggers.some(t => t.getHandlerFunction() === 'onEdit');
+    if (!hasTrigger) {
+      ScriptApp.newTrigger('onEdit')
+        .forSpreadsheet(ss)
+        .onEdit()
+        .create();
+      safeAlert_('✅ Installable Edit Trigger installed successfully! Multi-select now has elevated permissions.');
+    } else {
+      safeAlert_('ℹ️ Installable Edit Trigger is already configured.');
+    }
+  } catch (err) {
+    safeAlert_('⚠️ Note on Installable Trigger: ' + err.message);
+  }
+}
+
+/**
  * 📋 Creates the custom menu when the spreadsheet opens
  */
 function onOpen() {
@@ -265,13 +447,31 @@ function onOpen() {
     ui.createMenu('🎨 AI Prompt Builder')
       .addItem('📊 Open Interactive Dashboard', 'showDashboard')
       .addItem('📱 Open Compact Dashboard', 'showDashboardCompact')
+      .addItem('☑️ Multi-Select Trait Studio (Sidebar)', 'showMultiSelectPicker')
       .addItem('📋 1-Click Copy Generated Prompt', 'showPromptCopyModal')
+      .addSeparator()
+      .addSubMenu(ui.createMenu('✨ Quick Presets (1-Click)')
+        .addItem('🌆 Cyberpunk Noir', 'applyPresetCyberpunkNoir')
+        .addItem('✨ Ethereal Fantasy', 'applyPresetEtherealFantasy')
+        .addItem('🚀 Retro Synthwave', 'applyPresetRetroSynthwave')
+        .addItem('🌌 Hyperrealistic Sci-Fi', 'applyPresetSciFi')
+        .addItem('🏯 Cinematic Anime', 'applyPresetAnime')
+        .addItem('🕯️ Gothic Dark Fantasy', 'applyPresetGothic')
+        .addSeparator()
+        .addItem('🎲 Random Inspiration', 'applyPresetRandom'))
+      .addSeparator()
+      .addItem('🚀 Send Prompt to Discord / Webhook', 'sendCurrentInSheetPromptToDiscord')
+      .addItem('⚙️ Configure Discord Webhook URL', 'configureWebhookUrlPrompt')
       .addSeparator()
       .addItem('🚀 Reorganize Workbook to Columnar DBs', 'migrateToColumnarDBs')
       .addItem('✨ Setup / Rebuild In-Sheet Studio', 'setupPromptBuilderSheet')
       .addItem('🧹 Clear In-Sheet Selections', 'clearPromptBuilderSelections')
       .addItem('💾 Save In-Sheet Prompt to History Log', 'saveInSheetPromptToLog')
       .addItem('🔄 Refresh All Validations & Caches', 'refreshAllDropdowns')
+      .addSeparator()
+      .addItem('🧹 Clean Tab Bar (Hide [X] & Backend Tabs)', 'cleanTabBar')
+      .addItem('🛡️ Studio Focus (Hide DBs Too)', 'cleanTabBarStudioFocus')
+      .addItem('👁️ Unhide All Tabs', 'unhideAllTabs')
       .addSeparator()
       .addItem('📥 Setup Import Sheets', 'setupImportSheets')
       .addItem('🎥 Setup Video Tab', 'seedVideoCategories')
@@ -282,6 +482,7 @@ function onOpen() {
       .addSeparator()
       .addItem('🧰 Run Diagnostics', 'runFullDiagnostics')
       .addItem('🧪 Debug Camera Categories', 'debugCameraDiagnosis')
+      .addItem('⚡ Setup Installable Trigger (Multi-Select Fallback)', 'setupInstallableEditTrigger')
       .addSeparator()
       .addItem('❓ Help & Documentation', 'showHelp')
       .addToUi();
@@ -911,25 +1112,33 @@ function generatePromptFromSelections(selections) {
   try {
     const parts = [];
     
+    const flattenVal = function(val) {
+      if (!val) return;
+      if (Array.isArray(val)) {
+        val.forEach(function(v) { if (v) parts.push(String(v).trim()); });
+      } else if (typeof val === 'string' && val.includes(',')) {
+        val.split(',').forEach(function(v) {
+          const trimmed = v.trim();
+          if (trimmed) parts.push(trimmed);
+        });
+      } else {
+        parts.push(String(val).trim());
+      }
+    };
+    
     // Collect CHARACTER selections 👤
-    if (selections.character) {
-      Object.values(selections.character).forEach(val => {
-        if (val) parts.push(val);
-      });
+    if (selections && selections.character) {
+      Object.values(selections.character).forEach(flattenVal);
     }
     
     // Collect SCENE selections 🎬
-    if (selections.scene) {
-      Object.values(selections.scene).forEach(val => {
-        if (val) parts.push(val);
-      });
+    if (selections && selections.scene) {
+      Object.values(selections.scene).forEach(flattenVal);
     }
     
     // Collect CAMERA selections 📸
-    if (selections.camera) {
-      Object.values(selections.camera).forEach(val => {
-        if (val) parts.push(val);
-      });
+    if (selections && selections.camera) {
+      Object.values(selections.camera).forEach(flattenVal);
     }
     
     if (!parts.length) {
@@ -992,10 +1201,15 @@ function generateNarrativeFormat(parts) {
 function generateTechnicalFormat(parts, selections) {
   let output = '=== AI ART PROMPT - TECHNICAL FORMAT ===\n\n';
   
+  const formatVal = function(v) {
+    if (Array.isArray(v)) return v.join(', ');
+    return String(v);
+  };
+
   if (selections.character && Object.keys(selections.character).length > 0) {
     output += '👤 CHARACTER:\n';
     Object.entries(selections.character).forEach(([cat, val]) => {
-      if (val) output += `  • ${cat}: ${val}\n`;
+      if (val) output += `  • ${cat}: ${formatVal(val)}\n`;
     });
     output += '\n';
   }
@@ -1003,7 +1217,7 @@ function generateTechnicalFormat(parts, selections) {
   if (selections.scene && Object.keys(selections.scene).length > 0) {
     output += '🎬 SCENE:\n';
     Object.entries(selections.scene).forEach(([cat, val]) => {
-      if (val) output += `  • ${cat}: ${val}\n`;
+      if (val) output += `  • ${cat}: ${formatVal(val)}\n`;
     });
     output += '\n';
   }
@@ -1011,7 +1225,7 @@ function generateTechnicalFormat(parts, selections) {
   if (selections.camera && Object.keys(selections.camera).length > 0) {
     output += '📸 CAMERA:\n';
     Object.entries(selections.camera).forEach(([cat, val]) => {
-      if (val) output += `  • ${cat}: ${val}\n`;
+      if (val) output += `  • ${cat}: ${formatVal(val)}\n`;
     });
   }
   
@@ -1040,9 +1254,19 @@ function generatePoeticFormat(parts) {
  * 📋 Generates bullet-point format prompt
  */
 function generateBulletPointFormat(parts, selections) {
-  const charCount = Object.values(selections.character || {}).filter(v => v).length;
-  const sceneCount = Object.values(selections.scene || {}).filter(v => v).length;
-  const cameraCount = Object.values(selections.camera || {}).filter(v => v).length;
+  const countItems = function(secObj) {
+    if (!secObj) return 0;
+    let total = 0;
+    Object.values(secObj).forEach(function(v) {
+      if (Array.isArray(v)) total += v.length;
+      else if (v) total++;
+    });
+    return total;
+  };
+
+  const charCount = countItems(selections.character);
+  const sceneCount = countItems(selections.scene);
+  const cameraCount = countItems(selections.camera);
   
   let output =
     '🎨 AI ART PROMPT - QUICK REFERENCE\n\n' +
@@ -1329,10 +1553,28 @@ function savePromptToLog(promptText, selections) {
     sections.forEach(function (sectionKey) {
       const sectionSelections = (selections && selections[sectionKey]) || {};
       Object.keys(sectionSelections).forEach(function (category) {
-        const value = sectionSelections[category];
-        if (!value) return;
-        sheet.appendRow([category, value, 'Dashboard', timestamp]);
-        rowsAppended++;
+        const val = sectionSelections[category];
+        if (!val) return;
+        if (Array.isArray(val)) {
+          val.forEach(function(item) {
+            const trimmed = String(item || '').trim();
+            if (trimmed) {
+              sheet.appendRow([category, trimmed, 'Dashboard', timestamp]);
+              rowsAppended++;
+            }
+          });
+        } else if (typeof val === 'string' && val.includes(',')) {
+          val.split(',').forEach(function(item) {
+            const trimmed = item.trim();
+            if (trimmed) {
+              sheet.appendRow([category, trimmed, 'Dashboard', timestamp]);
+              rowsAppended++;
+            }
+          });
+        } else {
+          sheet.appendRow([category, String(val).trim(), 'Dashboard', timestamp]);
+          rowsAppended++;
+        }
       });
     });
 
@@ -1770,29 +2012,7 @@ function logError(functionName, error) {
   if (error.stack) console.error('Stack:', error.stack);
 }
 
-/**
- * ⚡ Live trigger for interactive in-sheet updates
- */
-function onEdit(e) {
-  try {
-    if (!e || !e.range) return;
-    const sheet = e.range.getSheet();
-    const sheetName = sheet.getName();
-    
-    // Check if user edited a dropdown in PROMPT_BUILDER (Column D, Row 8+)
-    const isPbSheet = sheetName === CONFIG.SHEETS.PROMPT_BUILDER || 
-                      (CONFIG.SHEET_ALIASES.PROMPT_BUILDER && CONFIG.SHEET_ALIASES.PROMPT_BUILDER.includes(sheetName));
-    
-    if (isPbSheet && e.range.getColumn() === 4 && e.range.getRow() >= 8) {
-      const val = e.range.getValue();
-      if (val) {
-        SpreadsheetApp.getActiveSpreadsheet().toast('Prompt updated with "' + val + '" ✨ Click cell B2 and press Ctrl+C to copy!', '🎨 Prompt Studio', 3);
-      }
-    }
-  } catch (err) {
-    console.warn('onEdit warning: ' + err.message);
-  }
-}
+// Note: onEdit(e) multi-select and live trigger is canonically implemented above at line 263.
 
 /**
  * 🧹 Clears PROMPT_BUILDER selections (preserving formulas, headers, and validation)
@@ -1910,8 +2130,16 @@ function setupPromptBuilderSheet() {
       .setVerticalAlignment('middle');
     copyBox.setBorder(true, true, true, true, false, false, '#c7d2fe', SpreadsheetApp.BorderStyle.SOLID);
     
-    // Row 5: Spacing
-    sheet.setRowHeight(5, 12);
+    // 4. Row 5 (Cols B to E) - Real-time Character Length & Safety Bar
+    const lengthBarTop = sheet.getRange('B5:E5');
+    lengthBarTop.merge()
+      .setBackground('#0f172a')
+      .setFontColor('#38bdf8')
+      .setFontWeight('bold')
+      .setFontSize(9)
+      .setHorizontalAlignment('center')
+      .setVerticalAlignment('middle');
+    sheet.setRowHeight(5, 24);
     
     // Row 6: Column Table Headers
     const headers = [['Section', 'Category', 'Select Option (Dropdown Menu)', 'Guidance / Examples']];
@@ -1926,9 +2154,9 @@ function setupPromptBuilderSheet() {
     
     // Row 7: Instruction divider
     sheet.getRange('B7:E7').merge()
-      .setValue('👇 Click any green cell in Column D below to choose traits — Prompt auto-updates above in real-time 👇')
+      .setValue('✨ Multi-Select Enabled: Pick dropdowns in Col D to append traits (or re-select to toggle off). Or use Menu → 🎨 AI Prompt Builder → ☑️ Multi-Select Trait Studio')
       .setBackground('#f8fafc')
-      .setFontColor('#64748b')
+      .setFontColor('#475569')
       .setFontStyle('italic')
       .setFontSize(9)
       .setHorizontalAlignment('center')
@@ -2015,8 +2243,15 @@ function setupPromptBuilderSheet() {
     
     const lastCategoryRow = currentRow - 1;
     
-    // Set dynamic prompt formulas
+    // Set dynamic prompt formulas & real-time character limit indicator
     if (lastCategoryRow >= 8) {
+      lengthBarTop.setFormula(
+        '=IF(COUNTA(D8:D' + lastCategoryRow + ')=0, "📏 Length: 0 chars | AI Generator Status: ⚪ Awaiting Selection", ' +
+        '"📏 Clean Prompt Length: " & LEN(B2) & " chars | Midjourney (1,000 cap): " & ' +
+        'IF(LEN(B2)<=1000, "🟢 SAFE (" & (1000-LEN(B2)) & " chars remaining)", "⚠️ EXCEEDS BY " & (LEN(B2)-1000) & " CHARS") & ' +
+        '" | Discord (2,000 cap): " & IF(LEN(B2)<=2000, "🟢 SAFE", "⚠️ OVER"))'
+      );
+      
       promptRangeClean.setFormula(
         '=IF(COUNTA(D8:D' + lastCategoryRow + ')=0, ' +
         '"✨ Pick dropdown options below in Column D — your composed prompt will appear here in real-time ready to copy!", ' +
@@ -2033,17 +2268,178 @@ function setupPromptBuilderSheet() {
       );
     }
     
-    // Clear any leftover old rows below the data table
+    // ═══════════════════════════════════════════════════════════════════════════
+    // 📋 DYNAMIC OUTPUT & STRUCTURED MESSAGE CARD (DEBT DISPUTE PATTERN)
+    // ═══════════════════════════════════════════════════════════════════════════
+    const outStart = lastCategoryRow + 2; // Row 29
+    sheet.setRowHeight(outStart - 1, 16); // Row 28 spacer
+
+    // 1. Output Banner Header
+    const outBanner = sheet.getRange('B' + outStart + ':E' + outStart);
+    outBanner.merge()
+      .setValue('📋 COMPLETE ASSEMBLED PROMPT & MULTI-LINE BREAKDOWN')
+      .setBackground('#1e293b')
+      .setFontColor('#ffffff')
+      .setFontWeight('bold')
+      .setFontSize(11)
+      .setHorizontalAlignment('center')
+      .setVerticalAlignment('middle');
+    sheet.setRowHeight(outStart, 32);
+
+    // 2. Subheader
+    const outSub = sheet.getRange('B' + (outStart + 1) + ':E' + (outStart + 1));
+    outSub.merge()
+      .setValue('✨ Real-time dynamic composition from single & multi-selected traits above — Ready to copy!')
+      .setBackground('#f8fafc')
+      .setFontColor('#64748b')
+      .setFontStyle('italic')
+      .setFontSize(9)
+      .setHorizontalAlignment('center')
+      .setVerticalAlignment('middle');
+    sheet.setRowHeight(outStart + 1, 22);
+
+    // 3. Full Clean Prompt Box (Rows outStart + 2 to outStart + 4)
+    const promptBoxBottom = sheet.getRange('B' + (outStart + 2) + ':E' + (outStart + 4));
+    promptBoxBottom.merge()
+      .setFormula('=B2')
+      .setBackground('#f8fafc')
+      .setFontColor('#0f172a')
+      .setFontWeight('bold')
+      .setFontSize(11)
+      .setWrap(true)
+      .setHorizontalAlignment('left')
+      .setVerticalAlignment('top');
+    promptBoxBottom.setBorder(true, true, true, true, false, false, '#6366f1', SpreadsheetApp.BorderStyle.SOLID_MEDIUM);
+    sheet.setRowHeight(outStart + 2, 26);
+    sheet.setRowHeight(outStart + 3, 26);
+    sheet.setRowHeight(outStart + 4, 26);
+
+    // 4. Spacing
+    sheet.setRowHeight(outStart + 5, 10);
+
+    // 5. Section Breakdown Header
+    const secHeader = sheet.getRange('B' + (outStart + 6) + ':E' + (outStart + 6));
+    secHeader.merge()
+      .setValue('🏷️ STRUCTURED SECTION BREAKDOWN')
+      .setBackground('#334155')
+      .setFontColor('#ffffff')
+      .setFontWeight('bold')
+      .setFontSize(10)
+      .setHorizontalAlignment('center')
+      .setVerticalAlignment('middle');
+    sheet.setRowHeight(outStart + 6, 26);
+
+    // 6. Section Rows
+    // Character (Rows 8 to 15)
+    sheet.getRange(outStart + 7, 2).setValue('👤 Character Design')
+      .setBackground('#eff6ff').setFontColor('#1d4ed8').setFontWeight('bold').setVerticalAlignment('middle');
+    const charBreakdown = sheet.getRange('C' + (outStart + 7) + ':E' + (outStart + 7));
+    charBreakdown.merge()
+      .setFormula('=IF(COUNTA(D8:D15)=0, "—", TEXTJOIN(", ", TRUE, D8:D15))')
+      .setFontColor('#0f172a').setFontWeight('medium').setVerticalAlignment('middle');
+    sheet.setRowHeight(outStart + 7, 26);
+
+    // Scene (Rows 16 to 21)
+    sheet.getRange(outStart + 8, 2).setValue('🎬 Scene Settings')
+      .setBackground('#ecfdf5').setFontColor('#047857').setFontWeight('bold').setVerticalAlignment('middle');
+    const sceneBreakdown = sheet.getRange('C' + (outStart + 8) + ':E' + (outStart + 8));
+    sceneBreakdown.merge()
+      .setFormula('=IF(COUNTA(D16:D21)=0, "—", TEXTJOIN(", ", TRUE, D16:D21))')
+      .setFontColor('#0f172a').setFontWeight('medium').setVerticalAlignment('middle');
+    sheet.setRowHeight(outStart + 8, 26);
+
+    // Camera (Rows 22 to 27)
+    sheet.getRange(outStart + 9, 2).setValue('📸 Camera & Concept')
+      .setBackground('#f5f3ff').setFontColor('#6d28d9').setFontWeight('bold').setVerticalAlignment('middle');
+    const cameraBreakdown = sheet.getRange('C' + (outStart + 9) + ':E' + (outStart + 9));
+    cameraBreakdown.merge()
+      .setFormula('=IF(COUNTA(D22:D27)=0, "—", TEXTJOIN(", ", TRUE, D22:D27))')
+      .setFontColor('#0f172a').setFontWeight('medium').setVerticalAlignment('middle');
+    sheet.setRowHeight(outStart + 9, 26);
+
+    // Border for section breakdown table
+    sheet.getRange(outStart + 7, 2, 3, 4).setBorder(true, true, true, true, true, true, '#cbd5e1', SpreadsheetApp.BorderStyle.SOLID);
+
+    // 7. Spacing
+    sheet.setRowHeight(outStart + 10, 10);
+
+    // 8. Formatted Multi-Line Message Card (Debt Dispute Replica!)
+    const cardHeader = sheet.getRange('B' + (outStart + 11) + ':E' + (outStart + 11));
+    cardHeader.merge()
+      .setValue('💬 FORMATTED MULTI-LINE PROMPT (COPY CARD)')
+      .setBackground('#1e293b')
+      .setFontColor('#ffffff')
+      .setFontWeight('bold')
+      .setFontSize(10)
+      .setHorizontalAlignment('center')
+      .setVerticalAlignment('middle');
+    sheet.setRowHeight(outStart + 11, 26);
+
+    const multiLineFormula =
+      '=IF(COUNTA(D8:D' + lastCategoryRow + ')=0, ' +
+      '"✨ Pick dropdown options above to generate your structured prompt...", ' +
+      '"🎨 AI ART GENERATION PROMPT:" & CHAR(10) & ' +
+      'IF(COUNTA(D8:D15)>0, "👤 CHARACTER: " & TEXTJOIN(", ", TRUE, D8:D15) & CHAR(10), "") & ' +
+      'IF(COUNTA(D16:D21)>0, "🎬 SCENE: " & TEXTJOIN(", ", TRUE, D16:D21) & CHAR(10), "") & ' +
+      'IF(COUNTA(D22:D27)>0, "📸 CAMERA: " & TEXTJOIN(", ", TRUE, D22:D27) & CHAR(10), "") & ' +
+      'CHAR(10) & "⚡ FULL COMMAND: GENERATE AN IMAGE: " & B2)';
+
+    const cardBox = sheet.getRange('B' + (outStart + 12) + ':E' + (outStart + 15));
+    cardBox.merge()
+      .setFormula(multiLineFormula)
+      .setBackground('#fffbeb')
+      .setFontColor('#78350f')
+      .setFontWeight('bold')
+      .setFontSize(10)
+      .setWrap(true)
+      .setHorizontalAlignment('left')
+      .setVerticalAlignment('top');
+    cardBox.setBorder(true, true, true, true, false, false, '#f59e0b', SpreadsheetApp.BorderStyle.SOLID_MEDIUM);
+    sheet.setRowHeight(outStart + 12, 24);
+    sheet.setRowHeight(outStart + 13, 24);
+    sheet.setRowHeight(outStart + 14, 24);
+    sheet.setRowHeight(outStart + 15, 24);
+
+    // 9. Card Length & Discord Safety Bar (Row outStart + 16)
+    const cardLengthBar = sheet.getRange('B' + (outStart + 16) + ':E' + (outStart + 16));
+    cardLengthBar.merge()
+      .setFormula(
+        '=IF(COUNTA(D8:D' + lastCategoryRow + ')=0, "", ' +
+        '"📏 Card Length: " & LEN(B' + (outStart + 12) + ') & " chars | Discord Webhook (2,000 max): " & ' +
+        'IF(LEN(B' + (outStart + 12) + ')<=2000, "🟢 Ready to dispatch (" & (2000-LEN(B' + (outStart + 12) + ')) & " chars available)", "⚠️ Exceeds Discord 2,000 limit"))'
+      )
+      .setBackground('#fef3c7')
+      .setFontColor('#92400e')
+      .setFontWeight('bold')
+      .setFontSize(9)
+      .setHorizontalAlignment('center')
+      .setVerticalAlignment('middle');
+    sheet.setRowHeight(outStart + 16, 22);
+
+    // 10. Direct Webhook & Quick Action Guidance (Row outStart + 17)
+    const actionGuidance = sheet.getRange('B' + (outStart + 17) + ':E' + (outStart + 17));
+    actionGuidance.merge()
+      .setValue('🚀 Send to Discord/Agent: Menu → 🎨 AI Prompt Builder → 🚀 Send Prompt to Discord / Webhook')
+      .setBackground('#eff6ff')
+      .setFontColor('#1e40af')
+      .setFontWeight('bold')
+      .setFontSize(9)
+      .setHorizontalAlignment('center')
+      .setVerticalAlignment('middle');
+    sheet.setRowHeight(outStart + 17, 22);
+
+    // Clear any leftover rows below the bottom card
+    const finalRow = outStart + 19;
     const maxSheetRows = sheet.getMaxRows();
-    if (maxSheetRows > currentRow) {
-      const leftover = maxSheetRows - currentRow + 1;
+    if (maxSheetRows > finalRow) {
+      const leftover = maxSheetRows - finalRow + 1;
       if (leftover > 0) {
-        sheet.getRange(currentRow, 1, leftover, sheet.getMaxColumns()).clear();
+        sheet.getRange(finalRow, 1, leftover, sheet.getMaxColumns()).clear();
       }
     }
     
-    safeToast_(ss, 'Prompt Builder studio is ready! 🎨 Click cell B2 and copy anytime.', '✅ Studio Configured', 4);
-    return { success: true, totalCategories: lastCategoryRow - 7 };
+    safeToast_(ss, 'Prompt Builder studio is ready! 🎨 Includes Multi-Select & Dynamic Breakdown Card.', '✅ Studio Configured', 4);
+    return { success: true, totalCategories: lastCategoryRow - 7, finalRow: finalRow };
   } catch (error) {
     logError('setupPromptBuilderSheet', error);
     safeAlert_('❌ Error setting up Prompt Builder: ' + error.message);
@@ -2068,6 +2464,42 @@ function safeToast_(ss, msg, title, sec) {
 }
 
 /**
+ * 🧹 Clears only user dropdown selections in Column D of PROMPT_BUILDER (rows 8 to category end)
+ * Preserves all formula cards, headers, validations, and formatting intact!
+ */
+function clearPromptBuilderSelections() {
+  try {
+    const ss = SpreadsheetApp.getActiveSpreadsheet();
+    const sheet = getSheetByAnyName(ss, CONFIG.SHEETS.PROMPT_BUILDER);
+    if (!sheet) {
+      safeAlert_('⚠️ PROMPT_BUILDER sheet not found.');
+      return { success: false, message: 'Sheet not found' };
+    }
+    
+    // Find category rows dynamically (starts row 8, ends before spacer or output banner)
+    let lastCatRow = 27;
+    const maxRows = sheet.getLastRow();
+    for (let r = 8; r <= maxRows; r++) {
+      const bVal = String(sheet.getRange(r, 2).getValue() || '');
+      if (bVal.includes('COMPLETE ASSEMBLED') || bVal.includes('STRUCTURED') || bVal.includes('FORMATTED') || !bVal) {
+        lastCatRow = r - 2;
+        break;
+      }
+      lastCatRow = r;
+    }
+    if (lastCatRow < 8) lastCatRow = 27;
+    
+    sheet.getRange('D8:D' + lastCatRow).clearContent();
+    safeToast_(ss, 'In-sheet dropdown selections cleared! All prompt cards reset.', '🧹 Selections Cleared', 4);
+    return { success: true, clearedRows: lastCatRow - 7 };
+  } catch (error) {
+    logError('clearPromptBuilderSelections', error);
+    safeAlert_('❌ Error clearing selections: ' + error.message);
+    return { success: false, error: error.message };
+  }
+}
+
+/**
  * 💾 Appends the current in-sheet prompt and selected options to History/Log
  */
 function saveInSheetPromptToLog() {
@@ -2085,17 +2517,27 @@ function saveInSheetPromptToLog() {
       return;
     }
     
-    const lastRow = pbSheet.getLastRow();
-    if (lastRow < 8) return;
+    // Find the category boundary so we never ingest bottom output cards
+    let lastCatRow = 27;
+    const maxRows = pbSheet.getLastRow();
+    for (let r = 8; r <= maxRows; r++) {
+      const bVal = String(pbSheet.getRange(r, 2).getValue() || '');
+      if (bVal.includes('COMPLETE ASSEMBLED') || bVal.includes('STRUCTURED') || bVal.includes('FORMATTED') || !bVal) {
+        lastCatRow = r - 2;
+        break;
+      }
+      lastCatRow = r;
+    }
+    if (lastCatRow < 8) return;
     
-    const tableData = pbSheet.getRange(8, 2, lastRow - 7, 3).getValues(); // Cols B, C, D
+    const tableData = pbSheet.getRange(8, 2, lastCatRow - 7, 3).getValues(); // Cols B, C, D
     const selections = { character: {}, scene: {}, camera: {} };
     
     tableData.forEach(function(row) {
       const secName = String(row[0] || '').toLowerCase();
       const catName = String(row[1] || '').trim();
       const val = String(row[2] || '').trim();
-      if (!val) return;
+      if (!val || secName.includes('complete') || secName.includes('structured') || secName.includes('formatted')) return;
       
       if (secName.includes('character')) selections.character[catName] = val;
       else if (secName.includes('scene')) selections.scene[catName] = val;
@@ -2111,6 +2553,364 @@ function saveInSheetPromptToLog() {
   } catch (error) {
     logError('saveInSheetPromptToLog', error);
     SpreadsheetApp.getUi().alert('❌ Error saving to log: ' + error.message);
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// ✨ CURATED QUICK PRESETS & INSPIRATION ENGINE
+// ═══════════════════════════════════════════════════════════════════════════
+
+const PRESETS = {
+  cyberpunk: {
+    name: 'Cyberpunk Noir',
+    icon: '🌆',
+    description: 'Neon-soaked dystopian mystery with volumetric rain and sharp reflections',
+    selections: {
+      character: { 'Gender': 'Cyborg Detective', 'Attire': 'Neon Trenchcoat', 'Hair': 'Undercut Hologram' },
+      scene: { 'Setting': 'Rainy Neo-Tokyo Rooftop', 'Lighting': 'Volumetric Neon Glow', 'Atmosphere': 'Cyberpunk Dystopian' },
+      camera: { 'Shot Type': 'Cinematic Wide Angle', 'Lens': 'Anamorphic Lens' }
+    }
+  },
+  fantasy: {
+    name: 'Ethereal Fantasy',
+    icon: '✨',
+    description: 'Enchanted mystical realms with celestial lighting and braided silk',
+    selections: {
+      character: { 'Gender': 'Elf Sorceress', 'Attire': 'Flowing Celestial Silk', 'Hair': 'Silver Braided' },
+      scene: { 'Setting': 'Enchanted Bioluminescent Forest', 'Lighting': 'Golden Hour God Rays', 'Atmosphere': 'Mystical Dreamscape' },
+      camera: { 'Shot Type': 'Medium Portrait', 'Lens': 'Macro Bokeh Depth' }
+    }
+  },
+  synthwave: {
+    name: 'Retro Synthwave',
+    icon: '🚀',
+    description: '1984 wireframe aesthetic with magenta sunsets and chrome leather',
+    selections: {
+      character: { 'Gender': 'Futuristic Pilot', 'Attire': 'Chrome Leather Jacket' },
+      scene: { 'Setting': 'Endless Grid Horizon 1984', 'Lighting': 'Purple Magenta Sunset', 'Atmosphere': 'Retro 80s Nostalgia' },
+      camera: { 'Shot Type': 'Low Angle Hero Shot', 'Lens': 'VHS Film Grain' }
+    }
+  },
+  scifi: {
+    name: 'Hyperrealistic Sci-Fi',
+    icon: '🌌',
+    description: 'Deep space exploration with IMAX clarity and high-tech exosuits',
+    selections: {
+      character: { 'Gender': 'Deep Space Astronaut', 'Attire': 'High-Tech Exosuit' },
+      scene: { 'Setting': 'Orbital Space Station Over Earth', 'Lighting': 'Harsh Solar Flare', 'Atmosphere': 'Zero Gravity Cinematic' },
+      camera: { 'Shot Type': 'Ultra-Wide Establishing Shot', 'Lens': 'IMAX 70mm Sharp' }
+    }
+  },
+  anime: {
+    name: 'Cinematic Anime',
+    icon: '🏯',
+    description: 'Wind-swept cherry blossom shrine with hand-painted Ghibli warmth',
+    selections: {
+      character: { 'Gender': 'Samurai Wanderer', 'Attire': 'Traditional Haori & Katana' },
+      scene: { 'Setting': 'Cherry Blossom Shrine in Wind', 'Lighting': 'Soft Pastel Twilight', 'Atmosphere': 'Studio Ghibli Aesthetic' },
+      camera: { 'Shot Type': 'Dynamic Action Pose', 'Lens': 'Anime Shintaku Cel' }
+    }
+  },
+  gothic: {
+    name: 'Gothic Dark Fantasy',
+    icon: '🕯️',
+    description: 'Haunted ruins illuminated by candlelight and silver moonlight',
+    selections: {
+      character: { 'Gender': 'Vampire Aristocrat', 'Attire': 'Victorian Velvet Cape' },
+      scene: { 'Setting': 'Haunted Cathedral Ruins', 'Lighting': 'Flickering Candlelight & Moonlight', 'Atmosphere': 'Ominous Foggy Eldritch' },
+      camera: { 'Shot Type': 'Close-Up Dramatic Portrait', 'Lens': 'Dark Chiaroscuro 35mm' }
+    }
+  }
+};
+
+/**
+ * ✨ Applies a curated preset to the in-sheet PROMPT_BUILDER studio
+ */
+function applyPresetToSheet(presetKey) {
+  try {
+    const ss = SpreadsheetApp.getActiveSpreadsheet();
+    const sheet = getSheetByAnyName(ss, CONFIG.SHEETS.PROMPT_BUILDER);
+    if (!sheet) {
+      safeAlert_('⚠️ PROMPT_BUILDER sheet not found. Please run "Setup / Rebuild In-Sheet Studio" first.');
+      return { success: false, message: 'Sheet not found' };
+    }
+
+    const preset = PRESETS[presetKey];
+    if (!preset) {
+      safeAlert_('⚠️ Preset "' + presetKey + '" not recognized.');
+      return { success: false, message: 'Unknown preset' };
+    }
+
+    // Clear existing dropdown selections (D8:D27)
+    sheet.getRange('D8:D27').clearContent();
+
+    const maxRows = sheet.getLastRow();
+    let appliedCount = 0;
+
+    for (let r = 8; r <= 27 && r <= maxRows; r++) {
+      const secText = String(sheet.getRange(r, 2).getValue() || '').toLowerCase();
+      const catText = String(sheet.getRange(r, 3).getValue() || '').trim();
+
+      let targetSec = null;
+      if (secText.includes('character')) targetSec = preset.selections.character;
+      else if (secText.includes('scene')) targetSec = preset.selections.scene;
+      else if (secText.includes('camera') || secText.includes('shot')) targetSec = preset.selections.camera;
+
+      if (targetSec) {
+        for (const [pCat, pVal] of Object.entries(targetSec)) {
+          if (pCat.toLowerCase() === catText.toLowerCase() || catText.toLowerCase().includes(pCat.toLowerCase())) {
+            sheet.getRange(r, 4).setValue(pVal);
+            appliedCount++;
+            break;
+          }
+        }
+      }
+    }
+
+    safeToast_(ss, `${preset.icon} Preset "${preset.name}" applied! (${appliedCount} traits loaded)`, '✨ Preset Applied', 4);
+    return { success: true, preset: preset.name, appliedCount: appliedCount };
+  } catch (error) {
+    logError('applyPresetToSheet', error);
+    safeAlert_('❌ Error applying preset: ' + error.message);
+    return { success: false, error: error.message };
+  }
+}
+
+/**
+ * 🎲 Random Inspiration: Picks 1 random trait from each column across DBs
+ */
+function applyPresetRandom() {
+  try {
+    const ss = SpreadsheetApp.getActiveSpreadsheet();
+    const sheet = getSheetByAnyName(ss, CONFIG.SHEETS.PROMPT_BUILDER);
+    if (!sheet) return;
+
+    sheet.getRange('D8:D27').clearContent();
+
+    let appliedCount = 0;
+    for (let r = 8; r <= 27; r++) {
+      const secText = String(sheet.getRange(r, 2).getValue() || '').toLowerCase();
+      const catText = String(sheet.getRange(r, 3).getValue() || '').trim();
+      if (!catText) continue;
+
+      let dbSheetName = 'DB_Character';
+      if (secText.includes('scene')) dbSheetName = 'DB_Scene';
+      else if (secText.includes('camera')) dbSheetName = 'DB_Camera';
+
+      const dbSheet = getSheetByAnyName(ss, dbSheetName);
+      if (!dbSheet) continue;
+
+      const lastCol = dbSheet.getLastColumn();
+      const lastRow = dbSheet.getLastRow();
+      if (lastCol < 1 || lastRow < 2) continue;
+
+      const headers = dbSheet.getRange(1, 1, 1, lastCol).getValues()[0];
+      for (let c = 0; c < lastCol; c++) {
+        if (String(headers[c] || '').trim().toLowerCase() === catText.toLowerCase()) {
+          const colVals = dbSheet.getRange(2, c + 1, lastRow - 1, 1).getValues()
+            .map(v => String(v[0] || '').trim())
+            .filter(v => v && !looksNumeric(v) && !v.startsWith('#'));
+          if (colVals.length > 0) {
+            const randomVal = colVals[Math.floor(Math.random() * colVals.length)];
+            sheet.getRange(r, 4).setValue(randomVal);
+            appliedCount++;
+          }
+          break;
+        }
+      }
+    }
+
+    safeToast_(ss, `🎲 Random Inspiration loaded with ${appliedCount} traits!`, '🎲 Random Inspiration', 4);
+    return { success: true, appliedCount: appliedCount };
+  } catch (error) {
+    logError('applyPresetRandom', error);
+    safeAlert_('❌ Error generating random preset: ' + error.message);
+  }
+}
+
+// Preset wrapper functions for Google Sheets menu items
+function applyPresetCyberpunkNoir() { return applyPresetToSheet('cyberpunk'); }
+function applyPresetEtherealFantasy() { return applyPresetToSheet('fantasy'); }
+function applyPresetRetroSynthwave() { return applyPresetToSheet('synthwave'); }
+function applyPresetSciFi() { return applyPresetToSheet('scifi'); }
+function applyPresetAnime() { return applyPresetToSheet('anime'); }
+function applyPresetGothic() { return applyPresetToSheet('gothic'); }
+
+// ═══════════════════════════════════════════════════════════════════════════
+// 🚀 DISCORD & LOCAL AI AGENT ECOSYSTEM WEBHOOK ENGINE
+// ═══════════════════════════════════════════════════════════════════════════
+
+/**
+ * 🚀 Dispatches prompt text to Discord or a local AI agent ecosystem webhook
+ */
+function sendPromptToWebhook(promptText, customUrl) {
+  try {
+    const text = String(promptText || '').trim();
+    if (!text || text.startsWith('✨') || text.startsWith('❌')) {
+      return { success: false, message: 'No prompt text to send. Please make selections first.' };
+    }
+
+    const props = PropertiesService.getScriptProperties();
+    const webhookUrl = (customUrl && String(customUrl).trim()) || props.getProperty('DISCORD_WEBHOOK_URL');
+
+    if (!webhookUrl) {
+      return {
+        success: false,
+        needUrl: true,
+        message: 'No Webhook URL configured. Please set your Discord Webhook URL first.'
+      };
+    }
+
+    // Split into chunks if text exceeds Discord 2,000 char limit
+    const chunks = [];
+    if (text.length <= 1950) {
+      chunks.push(text);
+    } else {
+      let remaining = text;
+      while (remaining.length > 0) {
+        if (remaining.length <= 1950) {
+          chunks.push(remaining);
+          break;
+        }
+        let breakIdx = remaining.lastIndexOf('\n', 1950);
+        if (breakIdx === -1) breakIdx = remaining.lastIndexOf(' ', 1950);
+        if (breakIdx === -1) breakIdx = 1950;
+        chunks.push(remaining.substring(0, breakIdx).trim());
+        remaining = remaining.substring(breakIdx).trim();
+      }
+    }
+
+    let allSucceeded = true;
+    chunks.forEach(function(chunk, idx) {
+      const payload = {
+        username: 'AI Art Prompt Studio 🎨',
+        avatar_url: 'https://img.icons8.com/color/512/paint-palette.png',
+        content: (chunks.length > 1 ? `**[Part ${idx + 1}/${chunks.length}]**\n` : '') + chunk
+      };
+
+      const options = {
+        method: 'post',
+        contentType: 'application/json',
+        payload: JSON.stringify(payload),
+        muteHttpExceptions: true
+      };
+
+      const response = UrlFetchApp.fetch(webhookUrl, options);
+      const code = response.getResponseCode();
+      if (code < 200 || code >= 300) {
+        allSucceeded = false;
+        console.warn('Webhook HTTP ' + code + ': ' + response.getContentText());
+      }
+    });
+
+    if (allSucceeded) {
+      return { success: true, message: '🚀 Prompt dispatched to Discord / Webhook successfully! (' + text.length + ' chars)' };
+    } else {
+      return { success: false, message: 'Webhook endpoint returned an HTTP error response.' };
+    }
+  } catch (error) {
+    logError('sendPromptToWebhook', error);
+    return { success: false, error: error.message };
+  }
+}
+
+/**
+ * 🚀 Sends current prompt from PROMPT_BUILDER (Debt Dispute card or B2) to Discord Webhook
+ */
+function sendCurrentInSheetPromptToDiscord() {
+  try {
+    const ss = SpreadsheetApp.getActiveSpreadsheet();
+    const sheet = getSheetByAnyName(ss, CONFIG.SHEETS.PROMPT_BUILDER);
+    if (!sheet) {
+      safeAlert_('⚠️ PROMPT_BUILDER sheet not found.');
+      return;
+    }
+
+    let promptText = '';
+    const lastRow = sheet.getLastRow();
+    for (let r = 28; r <= lastRow; r++) {
+      const bVal = String(sheet.getRange(r, 2).getValue() || '');
+      if (bVal.includes('AI ART GENERATION PROMPT:')) {
+        promptText = bVal;
+        break;
+      }
+    }
+    if (!promptText) {
+      promptText = String(sheet.getRange('B2').getValue() || '').trim();
+    }
+
+    if (!promptText || promptText.includes('Pick dropdown options') || promptText.includes('Awaiting Selection')) {
+      safeAlert_('⚠️ Please select some options before sending to Discord.');
+      return;
+    }
+
+    const res = sendPromptToWebhook(promptText);
+    if (res.needUrl) {
+      configureWebhookUrlPrompt(promptText);
+    } else if (res.success) {
+      safeToast_(ss, res.message, '🚀 Discord Dispatched', 5);
+    } else {
+      safeAlert_('❌ Webhook error: ' + (res.message || res.error));
+    }
+  } catch (error) {
+    logError('sendCurrentInSheetPromptToDiscord', error);
+    safeAlert_('❌ Error sending to Discord: ' + error.message);
+  }
+}
+
+/**
+ * ⚙️ Prompts user to input or update Discord / Agent Webhook URL
+ */
+function configureWebhookUrlPrompt(pendingPromptToSend) {
+  try {
+    const ui = SpreadsheetApp.getUi();
+    const props = PropertiesService.getScriptProperties();
+    const current = props.getProperty('DISCORD_WEBHOOK_URL') || '';
+
+    const resp = ui.prompt(
+      '⚙️ Discord & Agent Webhook Configuration',
+      'Paste your Discord Webhook URL (or local agent bridge URL):\n\n' +
+      (current ? 'Current: ' + current.substring(0, 35) + '...' : 'Currently not set'),
+      ui.ButtonSet.OK_CANCEL
+    );
+
+    if (resp.getSelectedButton() === ui.Button.OK) {
+      const newUrl = resp.getResponseText().trim();
+      if (newUrl) {
+        props.setProperty('DISCORD_WEBHOOK_URL', newUrl);
+        ui.alert('✅ Webhook URL saved successfully!');
+        if (pendingPromptToSend) {
+          const res = sendPromptToWebhook(pendingPromptToSend, newUrl);
+          if (res.success) {
+            SpreadsheetApp.getActiveSpreadsheet().toast('🚀 Prompt sent to Discord!', 'Sent', 4);
+          }
+        }
+      }
+    }
+  } catch (error) {
+    logError('configureWebhookUrlPrompt', error);
+  }
+}
+
+function setDiscordWebhookUrl(url) {
+  try {
+    PropertiesService.getScriptProperties().setProperty('DISCORD_WEBHOOK_URL', String(url || '').trim());
+    return { success: true, message: 'Webhook URL updated' };
+  } catch (e) {
+    return { success: false, error: e.message };
+  }
+}
+
+function getDiscordWebhookUrl() {
+  try {
+    const u = PropertiesService.getScriptProperties().getProperty('DISCORD_WEBHOOK_URL') || '';
+    return {
+      success: true,
+      hasUrl: Boolean(u),
+      maskedUrl: u ? (u.substring(0, 30) + '...****') : ''
+    };
+  } catch (e) {
+    return { success: false, error: e.message };
   }
 }
 
@@ -2232,5 +3032,156 @@ function testImportSystem() {
   } catch (error) {
     logError('testImportSystem', error);
     return { success: false, error: error.message };
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// 📑 TAB BAR MANAGEMENT & CLEANUP
+// ═══════════════════════════════════════════════════════════════════════════
+
+/**
+ * 🧹 Clean Tab Bar: Automatically hides all archived legacy tabs ([X] ...)
+ * and internal staging/utility tabs (ALIAS, RAW_AI_DATA, IMPORT_DB, HELP_DB).
+ * Ensures PROMPT_BUILDER or Overview remains visible and active.
+ */
+function cleanTabBar(options) {
+  try {
+    const opts = options || {};
+    const hideDbs = opts.hideDbs === true;
+    const ss = SpreadsheetApp.getActiveSpreadsheet();
+
+    // 1. Ensure primary studio tab is visible and active first
+    const primaryTab = ss.getSheetByName(CONFIG.SHEETS.PROMPT_BUILDER) || 
+                       ss.getSheetByName('📋 Overview') || 
+                       ss.getSheets()[0];
+    if (primaryTab) {
+      if (primaryTab.isSheetHidden()) {
+        primaryTab.showSheet();
+      }
+      ss.setActiveSheet(primaryTab);
+    }
+
+    // Auto-archive legacy Image Prompts tab if present without prefix
+    try {
+      const imgSheet = ss.getSheetByName('Image Prompts');
+      if (imgSheet && !ss.getSheetByName('[X] Image Prompts')) {
+        imgSheet.setName('[X] Image Prompts');
+        imgSheet.setTabColor('#94a3b8');
+        console.log('🏷️ Auto-archived Image Prompts → [X] Image Prompts');
+      }
+    } catch (e) {
+      console.warn('Note auto-archiving Image Prompts: ' + e.message);
+    }
+
+    const backendNames = new Set([
+      'ALIAS',
+      'RAW_AI_DATA',
+      'IMPORT_DB',
+      'HELP_DB',
+      'Image Prompts',
+      '[X] Image Prompts'
+    ]);
+
+    const dbNames = new Set([
+      CONFIG.SHEETS.CHARACTER, // DB_Character
+      CONFIG.SHEETS.SCENE,     // DB_Scene
+      CONFIG.SHEETS.CAMERA,    // DB_Camera
+      'Video'
+    ]);
+
+    const allSheets = ss.getSheets();
+    const newlyHidden = [];
+    const alreadyHidden = [];
+    const keptVisible = [];
+
+    allSheets.forEach(function(sheet) {
+      const name = sheet.getName();
+      const isLegacy = name.trim().startsWith('[X]');
+      const isBackend = backendNames.has(name);
+      const isDb = hideDbs && dbNames.has(name);
+
+      // Primary studio, log, and overview should never be auto-hidden
+      const isProtected = (name === CONFIG.SHEETS.PROMPT_BUILDER || name === 'History/Log' || name === '📋 Overview');
+
+      if (!isProtected && (isLegacy || isBackend || isDb)) {
+        if (!sheet.isSheetHidden()) {
+          try {
+            sheet.hideSheet();
+            newlyHidden.push(name);
+          } catch (e) {
+            console.warn('Could not hide sheet ' + name + ': ' + e.message);
+          }
+        } else {
+          alreadyHidden.push(name);
+        }
+      } else {
+        keptVisible.push(name);
+      }
+    });
+
+    const totalHidden = newlyHidden.length + alreadyHidden.length;
+    const modeLabel = hideDbs ? 'Studio Focus' : 'Standard';
+    const msg = '🧹 Tab bar cleaned (' + modeLabel + ')! ' + totalHidden + ' backend/archived tab(s) hidden. ' + keptVisible.length + ' active tab(s) visible.';
+    console.log(msg);
+    safeToast_(ss, msg, '🧹 Clean Tab Bar', 4);
+    return {
+      ok: true,
+      action: 'clean_tab_bar',
+      mode: hideDbs ? 'studio_focus' : 'standard',
+      newlyHidden: newlyHidden,
+      alreadyHidden: alreadyHidden,
+      totalHidden: totalHidden,
+      visibleCount: keptVisible.length,
+      visibleSheets: keptVisible
+    };
+  } catch (error) {
+    logError('cleanTabBar', error);
+    return { ok: false, error: error.message };
+  }
+}
+
+/**
+ * 🛡️ Studio Focus mode: Hides backend/archived tabs AND database reference tabs,
+ * keeping only the interactive studio, overview, and history log.
+ */
+function cleanTabBarStudioFocus() {
+  return cleanTabBar({ hideDbs: true });
+}
+
+/**
+ * 👁️ Unhide All Tabs: Restores visibility for all sheets in the workbook.
+ */
+function unhideAllTabs() {
+  try {
+    const ss = SpreadsheetApp.getActiveSpreadsheet();
+    const allSheets = ss.getSheets();
+    let unhiddenCount = 0;
+    const revealedSheets = [];
+
+    allSheets.forEach(function(sheet) {
+      if (sheet.isSheetHidden()) {
+        try {
+          sheet.showSheet();
+          unhiddenCount++;
+          revealedSheets.push(sheet.getName());
+        } catch (e) {
+          console.warn('Could not unhide sheet ' + sheet.getName() + ': ' + e.message);
+        }
+      }
+    });
+
+    const msg = '👁️ Unhid all tabs! ' + unhiddenCount + ' tab(s) restored. Total visible: ' + allSheets.length + '.';
+    console.log(msg);
+    safeToast_(ss, msg, '👁️ Unhide Tabs', 4);
+    return {
+      ok: true,
+      action: 'unhide_all_tabs',
+      unhiddenCount: unhiddenCount,
+      revealedSheets: revealedSheets,
+      totalSheets: allSheets.length
+    };
+  } catch (error) {
+    logError('unhideAllTabs', error);
+    return { ok: false, error: error.message };
   }
 }
