@@ -83,6 +83,32 @@ async function verifyWebApiEndpoint() {
     throw new Error('Resources endpoint returned empty or invalid data');
   }
   console.log(`PASS (${resJson.data.count} curated resources live)`);
+
+  // Verify NotebookLM Endpoint
+  process.stdout.write('Checking NotebookLM API (?action=notebooklm)... ');
+  const nblmUrl = `${API_URL.split('?')[0]}?action=notebooklm`;
+  const nblmResponse = await fetch(nblmUrl, { redirect: 'follow' });
+  if (!nblmResponse.ok) {
+    throw new Error(`NotebookLM endpoint returned HTTP ${nblmResponse.status}`);
+  }
+  const nblmJson = await nblmResponse.json();
+  if (!nblmJson.ok || !nblmJson.data || nblmJson.data.count === 0) {
+    throw new Error('NotebookLM endpoint returned empty or invalid data');
+  }
+  console.log(`PASS (${nblmJson.data.count} knowledge sources registered)`);
+
+  // Verify Production Queue Endpoint
+  process.stdout.write('Checking Production Queue API (?action=queue)... ');
+  const queueUrl = `${API_URL.split('?')[0]}?action=queue`;
+  const qResponse = await fetch(queueUrl, { redirect: 'follow' });
+  if (!qResponse.ok) {
+    throw new Error(`Queue endpoint returned HTTP ${qResponse.status}`);
+  }
+  const qJson = await qResponse.json();
+  if (!qJson.ok || !qJson.data) {
+    throw new Error('Queue endpoint returned invalid data');
+  }
+  console.log(`PASS (${qJson.data.count} queued batch tasks live)`);
 }
 
 async function main() {

@@ -497,6 +497,124 @@ function configureDriveArtFolderPrompt() {
   }
 }
 
+function getNotebookLMNotebookId_() {
+  const props = PropertiesService.getScriptProperties();
+  return props.getProperty(MEDIA_STUDIO_CONFIG.PROPERTIES.NOTEBOOKLM_ID) || '';
+}
+
+function setNotebookLMNotebookId(notebookId) {
+  const cleanId = String(notebookId || '').trim();
+  PropertiesService.getScriptProperties().setProperty(MEDIA_STUDIO_CONFIG.PROPERTIES.NOTEBOOKLM_ID, cleanId);
+  return { ok: true, notebookId: cleanId };
+}
+
+function configureNotebookLMNotebookIdPrompt() {
+  const ui = SpreadsheetApp.getUi();
+  const currentId = getNotebookLMNotebookId_();
+  const response = ui.prompt(
+    'Configure Google NotebookLM Notebook',
+    'Paste the NotebookLM Notebook ID (or full notebook URL) for art lore and style research sync:\n' +
+    '(Current ID: ' + (currentId || 'None set') + ')',
+    ui.ButtonSet.OK_CANCEL
+  );
+
+  if (response.getSelectedButton() === ui.Button.OK) {
+    let input = response.getResponseText().trim();
+    const match = input.match(/notebook\/([a-zA-Z0-9_-]+)/);
+    if (match) input = match[1];
+
+    if (input) {
+      setNotebookLMNotebookId(input);
+      ui.alert('Configured!', 'NotebookLM Notebook ID saved: ' + input, ui.ButtonSet.OK);
+    } else {
+      ui.alert('Empty Input', 'No Notebook ID was set.', ui.ButtonSet.OK);
+    }
+  }
+}
+
+/**
+ * Ingests or updates research sources in '🧠 NotebookLM_Sync'.
+ * @param {Array<Object>|Object} sources
+ */
+function ingestNotebookLMSources(sources) {
+  if (!Array.isArray(sources)) {
+    if (sources && typeof sources === 'object') sources = [sources];
+    else return { ok: false, error: 'sources must be an array or object' };
+  }
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  setupNotebookLMSyncSheet();
+  const sheet = ss.getSheetByName(MEDIA_STUDIO_CONFIG.TABS.NOTEBOOKLM_SYNC);
+  const now = new Date().toISOString().split('T')[0];
+  
+  const lastRow = sheet.getLastRow();
+  const existingKeys = {};
+  if (lastRow > 1) {
+    const keys = sheet.getRange(2, 1, lastRow - 1, 1).getValues();
+    keys.forEach(function(r, idx) {
+      if (r[0]) existingKeys[String(r[0]).trim()] = idx + 2;
+    });
+  }
+
+  let added = 0;
+  let updated = 0;
+  const newRows = [];
+
+  sources.forEach(function(src) {
+    const key = String(src.key || src.id || ('SRC-' + Utilities.getUuid().substring(0, 8).toUpperCase())).trim();
+    const title = src.title || src.name || 'Untitled Source';
+    const type = src.type || src.documentType || 'Markdown / Notes';
+    const summary = src.summary || src.content || '';
+    const url = src.url || src.notebookUrl || (getNotebookLMNotebookId_() ? 'https://notebooklm.google.com/notebook/' + getNotebookLMNotebookId_() : 'https://notebooklm.google.com');
+    const status = src.status || 'SYNCED';
+    const wordCount = src.wordCount || (summary ? summary.split(/\s+/).length : 0);
+
+    const rowData = [key, title, type, summary, url, status, wordCount, now];
+
+    if (existingKeys[key]) {
+      sheet.getRange(existingKeys[key], 1, 1, 8).setValues([rowData]);
+      updated++;
+    } else {
+      newRows.push(rowData);
+      added++;
+    }
+  });
+
+  if (newRows.length > 0) {
+    sheet.getRange(lastRow + 1, 1, newRows.length, 8).setValues(newRows);
+  }
+
+  return { ok: true, added: added, updated: updated, total: sheet.getLastRow() - 1 };
+}
+
+/**
+ * Adds an item to the '📅 Production_Queue'.
+ * @param {Object} item
+ */
+function enqueueProductionItem(item) {
+  if (!item || typeof item !== 'object') {
+    return { ok: false, error: 'item must be an object' };
+  }
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  setupProductionQueueSheet();
+  const sheet = ss.getSheetByName(MEDIA_STUDIO_CONFIG.TABS.PRODUCTION_QUEUE);
+  const now = new Date().toISOString();
+  const dateStr = now.split('T')[0];
+  const queueId = String(item.queueId || ('Q-' + Utilities.getUuid().substring(0, 8).toUpperCase()));
+  const concept = item.concept || item.title || 'Untitled Prompt';
+  const selections = typeof item.selections === 'string' ? item.selections : JSON.stringify(item.selections || {});
+  const engine = item.engine || 'Midjourney v6';
+  const ratio = item.ratio || item.aspectRatio || '16:9 (Landscape)';
+  const status = item.status || 'QUEUED';
+  const prompt = item.prompt || item.generatedPrompt || '';
+  const outputUrl = item.outputUrl || '';
+  const notes = item.notes || '';
+
+  const row = [queueId, dateStr, concept, selections, engine, ratio, status, prompt, outputUrl, notes, now];
+  sheet.appendRow(row);
+
+  return { ok: true, queueId: queueId, row: sheet.getLastRow() };
+}
+
 /**
  * Scans the configured Google Drive folder and syncs all image assets into
  * the '🖼️ Artwork_Registry' sheet with live =IMAGE() thumbnail formulas.

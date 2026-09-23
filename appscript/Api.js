@@ -91,8 +91,20 @@ function apiHandle_(e, method) {
         return apiJson_({ ok: true, action: 'notebooklm_sync', data: apiGetTableData_(MEDIA_STUDIO_CONFIG.TABS.NOTEBOOKLM_SYNC) });
       case 'sync_drive_artwork':
         return apiJson_({ ok: true, action: 'sync_drive_artwork', data: syncDriveArtworkIndex() });
+      case 'ingest_notebooklm':
+        return apiJson_({ ok: true, action: 'ingest_notebooklm', data: ingestNotebookLMSources(req.body.sources || req.body.source || (req.params && req.params.source)) });
+      case 'enqueue_production':
+        return apiJson_({ ok: true, action: 'enqueue_production', data: enqueueProductionItem(req.body.item || req.body) });
+      case 'get_notebooklm_id':
+        return apiJson_({ ok: true, action: 'get_notebooklm_id', data: { notebookId: getNotebookLMNotebookId_() } });
+      case 'set_notebooklm_id':
+        return apiJson_({ ok: true, action: 'set_notebooklm_id', data: setNotebookLMNotebookId((req.body && req.body.notebookId) || (req.params && req.params.notebookId)) });
+      case 'get_drive_folder_id':
+        return apiJson_({ ok: true, action: 'get_drive_folder_id', data: { folderId: getDriveArtRootFolderId_() } });
+      case 'set_drive_folder_id':
+        return apiJson_({ ok: true, action: 'set_drive_folder_id', data: setDriveArtRootFolderId((req.body && req.body.folderId) || (req.params && req.params.folderId)) });
       default:
-        return apiJson_({ ok: false, action: req.action, error: 'Unknown action. Use health | categories | prompt | setup_sheet | inspect_sheets | inspect_tab | migrate_to_columnar | archive_old_log | clean_tab_bar | clean_tab_bar_focus | unhide_all_tabs | clear_selections | presets | apply_preset | send_webhook | get_webhook | set_webhook | apply_selections | setup_media_studio | resources | artwork | queue | notebooklm | sync_drive_artwork' });
+        return apiJson_({ ok: false, action: req.action, error: 'Unknown action. Use health | categories | prompt | setup_sheet | inspect_sheets | inspect_tab | migrate_to_columnar | archive_old_log | clean_tab_bar | clean_tab_bar_focus | unhide_all_tabs | clear_selections | presets | apply_preset | send_webhook | get_webhook | set_webhook | apply_selections | setup_media_studio | resources | artwork | queue | notebooklm | sync_drive_artwork | ingest_notebooklm | enqueue_production | get_notebooklm_id | set_notebooklm_id | get_drive_folder_id | set_drive_folder_id' });
     }
   } catch (error) {
     logError('apiHandle_', error);
@@ -153,7 +165,9 @@ function apiParseRequest_(e, method) {
     section: body.section || params.section || null,
     token: body.token || params.token || null,
     formats: body.formats === true || params.formats === 'true',
-    selections: selections
+    selections: selections,
+    body: body,
+    params: params
   };
 }
 

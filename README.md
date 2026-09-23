@@ -10,7 +10,7 @@
 ![React 19](https://img.shields.io/badge/React-19.2-61DAFB?logo=react&logoColor=black)
 ![TypeScript](https://img.shields.io/badge/TypeScript-5.8-3178C6?logo=typescript&logoColor=white)
 ![Vite](https://img.shields.io/badge/Vite-6.2-646CFF?logo=vite&logoColor=white)
-![Google Apps Script](https://img.shields.io/badge/Google%20Apps%20Script-Deployed%20@24-4285F4?logo=google&logoColor=white)
+![Google Apps Script](https://img.shields.io/badge/Google%20Apps%20Script-Deployed%20@25-4285F4?logo=google&logoColor=white)
 ![clasp](https://img.shields.io/badge/clasp-v2.4-34A853)
 ![Gemini API](https://img.shields.io/badge/Gemini%20API-SDK%201.29-8E75C2?logo=googlegemini&logoColor=white)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
@@ -40,6 +40,7 @@ The platform operates across two complementary environments:
 - [Tech Stack](#-tech-stack)
 - [Google Sheets Dynamic Studio](#-google-sheets-dynamic-studio)
 - [Web App API & Endpoints](#-web-app-api--endpoints)
+- [NotebookLM & Automation CLI](#-notebooklm--automation-cli)
 - [Quick Start & Local Setup](#-quick-start--local-setup)
 - [Configuration](#-configuration)
 - [CI & Automated Verification](#-ci--automated-verification)
@@ -73,10 +74,10 @@ flowchart TD
             Log["History/Log\nUnified Selections Audit"]
         end
 
-        subgraph Backend["⚙️ Apps Script Backend (Deployment @24)"]
+        subgraph Backend["⚙️ Apps Script Backend (Deployment @25)"]
             Code["Code.js\nonEdit multi-select · menus"]
             Drive["DriveUrlIndexer.js\nDrive crawler · =IMAGE() · NotebookLM"]
-            Api["Api.js\nJSON Web App API (@24)"]
+            Api["Api.js\nJSON Web App API (@25)"]
             Dash["Dashboard_v5_0_ENHANCED.html\nIn-Sheet Modal Studio"]
         end
     end
@@ -86,6 +87,7 @@ flowchart TD
         Curl["curl / Automation Scripts"]
         GDrive["📁 Google Drive Artwork Store"]
         NBLM["🧠 Google NotebookLM"]
+        CLI["scripts/sync_notebooklm_art_sources.py\nRAG & Queue CLI"]
     end
 
     subgraph CI["🛡️ Continuous Integration (GitHub Actions)"]
@@ -102,6 +104,7 @@ flowchart TD
     Drive <--> Media
     Drive -. "Crawl & Thumbnail" .-> GDrive
     Drive -. "Research Sync" .-> NBLM
+    CLI -- "POST Ingest & Enqueue" --> Api
     DBC & DBS & DBK --> Studio
     
     Api -- "Cached JSON Payload" --> Agents
@@ -159,6 +162,7 @@ AI-Art-Prompt-Builder/
 │   └── assets/
 │       └── banner-brief.md      # Art direction brief, prompts, and maintainability spec
 ├── scripts/
+│   ├── sync_notebooklm_art_sources.py # Universal CLI for NotebookLM knowledge and queue sync
 │   └── verify-endpoints.js      # Live endpoint reachability test script (Node 22)
 ├── services/
 │   ├── geminiService.ts         # Google GenAI SDK integration for palette brainstorming
@@ -264,6 +268,33 @@ curl -L "https://script.google.com/macros/s/AKfycbyCjig1ociubkgrGw5P814n3aX1pQvz
 
 # Trigger background Drive indexing
 curl -L "https://script.google.com/macros/s/AKfycbyCjig1ociubkgrGw5P814n3aX1pQvzM4N5erySJWTJijL2oQW9ZfBZDUvwohLxHmyjNw/exec?action=sync_drive_artwork"
+```
+
+---
+
+## 🧠 NotebookLM & Automation CLI
+
+The repository includes a dedicated cross-platform CLI tool ([`scripts/sync_notebooklm_art_sources.py`](scripts/sync_notebooklm_art_sources.py)) adapted from the enterprise Morrison1 engine to synchronize research notes, art theory monographs, and prompt vocabulary into Google NotebookLM and the Google Sheet:
+
+```bash
+# 1. List all active synchronized NotebookLM knowledge sources
+python scripts/sync_notebooklm_art_sources.py --list
+
+# 2. Ingest explicit research concepts
+python scripts/sync_notebooklm_art_sources.py --sources "Atmospheric Light Scattering" "Surrealist Juxtapositions"
+
+# 3. Synchronize a local Markdown art theory monograph
+python scripts/sync_notebooklm_art_sources.py --file docs/art-theory/chiaroscuro.md
+
+# 4. Recursively scan a folder of research notes
+python scripts/sync_notebooklm_art_sources.py --dir docs/
+
+# 5. Enqueue a production batch task
+python scripts/sync_notebooklm_art_sources.py --enqueue "Hyper-Realistic Cyber Lotus" --engine "Flux.1 Dev" --ratio "16:9 (Landscape)" --prompt "luminescent cyber lotus floating on dark liquid mercury, volumetric god rays"
+
+# 6. Configure NotebookLM Notebook ID / URL
+python scripts/sync_notebooklm_art_sources.py --set-notebook "https://notebooklm.google.com/notebook/your-notebook-id"
+python scripts/sync_notebooklm_art_sources.py --get-notebook
 ```
 
 ---

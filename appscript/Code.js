@@ -482,6 +482,7 @@ function onOpen() {
         .addSeparator()
         .addItem('🔄 Sync Drive Artwork Index Now', 'syncDriveArtworkIndex')
         .addItem('⚙️ Configure Drive Artwork Folder ID', 'configureDriveArtFolderPrompt')
+        .addItem('⚙️ Configure NotebookLM Notebook ID', 'configureNotebookLMNotebookIdPrompt')
         .addItem('⏱️ Install Daily Drive Sync Trigger (6 AM)', 'installDailyDriveArtworkTrigger'))
       .addSeparator()
       .addItem('📥 Setup Import Sheets', 'setupImportSheets')
