@@ -471,7 +471,18 @@ function onOpen() {
       .addSeparator()
       .addItem('🧹 Clean Tab Bar (Hide [X] & Backend Tabs)', 'cleanTabBar')
       .addItem('🛡️ Studio Focus (Hide DBs Too)', 'cleanTabBarStudioFocus')
-      .addItem('👁️ Unhide All Tabs', 'unhideAllTabs')
+      .addSeparator()
+      .addSubMenu(ui.createMenu('📁 Media Studio & Automation')
+        .addItem('✨ Setup ALL Media Studio Sheets (1-Click)', 'setupAllMediaStudioSheets')
+        .addSeparator()
+        .addItem('🌐 Setup Web Resources Sheet', 'setupWebResourcesSheet')
+        .addItem('🖼️ Setup Artwork Registry Sheet', 'setupArtworkRegistrySheet')
+        .addItem('📅 Setup Production Queue Sheet', 'setupProductionQueueSheet')
+        .addItem('🧠 Setup NotebookLM Sync Sheet', 'setupNotebookLMSyncSheet')
+        .addSeparator()
+        .addItem('🔄 Sync Drive Artwork Index Now', 'syncDriveArtworkIndex')
+        .addItem('⚙️ Configure Drive Artwork Folder ID', 'configureDriveArtFolderPrompt')
+        .addItem('⏱️ Install Daily Drive Sync Trigger (6 AM)', 'installDailyDriveArtworkTrigger'))
       .addSeparator()
       .addItem('📥 Setup Import Sheets', 'setupImportSheets')
       .addItem('🎥 Setup Video Tab', 'seedVideoCategories')
@@ -2014,32 +2025,7 @@ function logError(functionName, error) {
 
 // Note: onEdit(e) multi-select and live trigger is canonically implemented above at line 263.
 
-/**
- * 🧹 Clears PROMPT_BUILDER selections (preserving formulas, headers, and validation)
- */
-function clearPromptBuilderSelections() {
-  try {
-    const ss = SpreadsheetApp.getActiveSpreadsheet();
-    const sheet = getSheetByAnyName(ss, CONFIG.SHEETS.PROMPT_BUILDER);
-    
-    if (!sheet) {
-      throw new Error('PROMPT_BUILDER sheet not found. Run "Setup / Rebuild In-Sheet Studio" first.');
-    }
-    
-    const lastRow = sheet.getLastRow();
-    if (lastRow >= 8) {
-      // Clear column D (selections) from row 8 downwards
-      sheet.getRange(8, 4, lastRow - 7, 1).clearContent();
-    }
-    
-    SpreadsheetApp.getActiveSpreadsheet().toast('All dropdown selections cleared! ✨', '🧹 Cleared', 3);
-    return { success: true, message: '✨ Prompt builder selections cleared!' };
-  } catch (error) {
-    logError('clearPromptBuilderSelections', error);
-    SpreadsheetApp.getUi().alert('❌ Error: ' + error.message);
-    return { success: false, message: error.message };
-  }
-}
+// Note: clearPromptBuilderSelections is canonically implemented below at line 2481 with dynamic category bounds and safe toast.
 
 /**
  * 🎨 Creates or updates the interactive in-sheet PROMPT_BUILDER studio sheet.

@@ -10,7 +10,7 @@
 ![React 19](https://img.shields.io/badge/React-19.2-61DAFB?logo=react&logoColor=black)
 ![TypeScript](https://img.shields.io/badge/TypeScript-5.8-3178C6?logo=typescript&logoColor=white)
 ![Vite](https://img.shields.io/badge/Vite-6.2-646CFF?logo=vite&logoColor=white)
-![Google Apps Script](https://img.shields.io/badge/Google%20Apps%20Script-Deployed%20@23-4285F4?logo=google&logoColor=white)
+![Google Apps Script](https://img.shields.io/badge/Google%20Apps%20Script-Deployed%20@24-4285F4?logo=google&logoColor=white)
 ![clasp](https://img.shields.io/badge/clasp-v2.4-34A853)
 ![Gemini API](https://img.shields.io/badge/Gemini%20API-SDK%201.29-8E75C2?logo=googlegemini&logoColor=white)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
@@ -69,12 +69,14 @@ flowchart TD
             DBS["DB_Scene\n(6 cols, 357 rows)"]
             DBK["DB_Camera\n(6 cols, 315 rows)"]
             Studio["PROMPT_BUILDER\nIn-Sheet Studio Sheet"]
+            Media["Media Studio Tabs\n🌐 Web_Resources · 🖼️ Artwork_Registry\n📅 Production_Queue · 🧠 NotebookLM_Sync"]
             Log["History/Log\nUnified Selections Audit"]
         end
 
-        subgraph Backend["⚙️ Apps Script Backend (Deployment @23)"]
-            Code["Code.js\nonEdit multi-select · formulas"]
-            Api["Api.js\nJSON Web App API"]
+        subgraph Backend["⚙️ Apps Script Backend (Deployment @24)"]
+            Code["Code.js\nonEdit multi-select · menus"]
+            Drive["DriveUrlIndexer.js\nDrive crawler · =IMAGE() · NotebookLM"]
+            Api["Api.js\nJSON Web App API (@24)"]
             Dash["Dashboard_v5_0_ENHANCED.html\nIn-Sheet Modal Studio"]
         end
     end
@@ -82,6 +84,8 @@ flowchart TD
     subgraph External["🤖 AI Agents & External Consumers"]
         Agents["Autonomous Agents / CLI Swarms\n(Codex · Claude · Antigravity)"]
         Curl["curl / Automation Scripts"]
+        GDrive["📁 Google Drive Artwork Store"]
+        NBLM["🧠 Google NotebookLM"]
     end
 
     subgraph CI["🛡️ Continuous Integration (GitHub Actions)"]
@@ -95,6 +99,9 @@ flowchart TD
     
     Code <--> Studio
     Code --> Log
+    Drive <--> Media
+    Drive -. "Crawl & Thumbnail" .-> GDrive
+    Drive -. "Research Sync" .-> NBLM
     DBC & DBS & DBK --> Studio
     
     Api -- "Cached JSON Payload" --> Agents
@@ -118,6 +125,12 @@ flowchart TD
 - **Gemini AI Palette Expansion**: Integrated `@google/genai` connection to dynamically brainstorm new character archetypes, lighting setups, or camera rigs.
 - **Customizable Themes & Audio**: Seven distinct UI themes (Neon, Dark, Pastel, Ocean, Sunset, Forest, Candy) with optional sound effects.
 - **Sub-15ms Cached Web App API**: High-speed JSON endpoints for category introspection and programmatic prompt compilation.
+- **Universal Media Studio & Production Automation**:
+  - **Inspiration Web Directory (`🌐 Web_Resources`)**: Curated catalogue of AI generation portals, style dictionaries, and prompt engineering references with categorized URLs and descriptions.
+  - **Google Drive Artwork Registry (`🖼️ Artwork_Registry`)**: Automated image indexing engine with dynamic `=IMAGE()` thumbnail previews, resolution/aspect metadata, generation engine tags, and full file IDs.
+  - **Batch Production Schedule Queue (`📅 Production_Queue`)**: Priority-ranked rendering pipeline tracker with engine targeting (Midjourney, Flux, SDXL, Imagen 3), aspect ratio specs, seed logging, and completion status validation.
+  - **Google NotebookLM Research & Knowledge Sync (`🧠 NotebookLM_Sync`)**: Direct synchronization tracking for art history lore, master artist styles, and prompt vocabulary documents mapped directly to NotebookLM IDs.
+  - **Automated Scheduled Crawlers**: Built-in 6:00 AM daily trigger installer (`installDailyDriveArtworkTrigger`) and manual `syncDriveArtworkIndex()` crawler to keep Drive references fresh.
 
 ---
 
@@ -135,6 +148,7 @@ AI-Art-Prompt-Builder/
 │   ├── Archive.js               # Legacy sheet deprecation and backup routines
 │   ├── Code.js                  # Core sheet engine, onEdit multi-select, studio setup
 │   ├── Dashboard_v5_0_ENHANCED.html # In-sheet HTML modal dashboard
+│   ├── DriveUrlIndexer.js       # Drive media crawler, =IMAGE() indexing, daily triggers, and NotebookLM sync
 │   ├── GOALS.md                 # Goal OS active ledger and milestone tracker
 │   ├── help.html                # Modal help and keyboard shortcuts guide
 │   ├── Migration.js             # Columnar database migration and cleanup utilities
@@ -184,13 +198,24 @@ The companion spreadsheet functions as a standalone prompt engineering environme
   - `DB_Character`: 8 categories (Gender, Age, Body Type, Hair, Clothing, Expression, Pose, Archetype)
   - `DB_Scene`: 6 categories (Environment, Time of Day, Weather, Lighting, Architecture, Era)
   - `DB_Camera`: 6 categories (Shot Type, Camera Angle, Lens, Framing, Motion, Color Grading)
+- **Active Media Studio Sheets**:
+  - `🌐 Web_Resources`: Curated directory of AI art platforms, style databases, and prompt tools (10 starter links)
+  - `🖼️ Artwork_Registry`: Automated Google Drive image index with `=IMAGE()` thumbnail previews, tags, and engine specs
+  - `📅 Production_Queue`: Batch generation queue with engine target, aspect ratio, seed, and status validation dropdowns
+  - `🧠 NotebookLM_Sync`: Knowledge registry linking artistic styles, lore, and prompt vocabularies to Google NotebookLM
   - `History/Log`: Unified selection history log (`Category | Value | Source | Timestamp`)
 
 ### In-Sheet Studio Setup
 From the Google Sheets top menu bar:
-1. Click **`🎨 AI Prompt Builder`** → **`🚀 Setup / Reset Studio Sheet`** to refresh data validations, dynamic formulas, and length counters.
-2. Click **`🎨 AI Prompt Builder`** → **`🧩 Multi-Select Trait Studio`** to open the sidebar for rapid multi-category editing.
-3. Click **`🎨 AI Prompt Builder`** → **`📊 Open Interactive Dashboard`** to open the pre-cached modal dashboard.
+1. Click **`🎨 AI Prompt Builder`**:
+   - **`🚀 Setup / Reset Studio Sheet`** to refresh data validations, dynamic formulas, and length counters.
+   - **`🧩 Multi-Select Trait Studio`** to open the sidebar for rapid multi-category editing.
+   - **`📊 Open Interactive Dashboard`** to open the pre-cached modal dashboard.
+2. Click **`📁 Media Studio & Automation`**:
+   - **`🚀 1-Click Setup All Media Studio Sheets`**: Initializes all 4 Media Studio sheets with headers, formatting, and validation.
+   - **`🔄 Sync Google Drive Artwork Now`**: Recursively indexes images from your designated Google Drive folder.
+   - **`⏰ Install 6:00 AM Daily Drive Indexer`**: Configures a daily background time-driven trigger for hands-free indexing.
+   - **`⚙️ Configure Drive Folder ID`** / **`⚙️ Configure NotebookLM Notebook ID`**: Persists root IDs directly into `ScriptProperties`.
 
 ---
 
@@ -206,7 +231,7 @@ https://script.google.com/macros/s/AKfycbyCjig1ociubkgrGw5P814n3aX1pQvzM4N5erySJ
 ```bash
 curl -L "https://script.google.com/macros/s/AKfycbyCjig1ociubkgrGw5P814n3aX1pQvzM4N5erySJWTJijL2oQW9ZfBZDUvwohLxHmyjNw/exec?action=health"
 ```
-**Response**: `{"ok": true, "timestamp": "...", "version": "5.2.0"}`
+**Response**: `{"ok": true, "timestamp": "...", "version": "5.6.0"}`
 
 ### 2. Fetch All Categories
 ```bash
@@ -219,6 +244,27 @@ Returns a cached JSON object grouped by `character`, `scene`, and `camera`.
 curl -L "https://script.google.com/macros/s/AKfycbyCjig1ociubkgrGw5P814n3aX1pQvzM4N5erySJWTJijL2oQW9ZfBZDUvwohLxHmyjNw/exec?action=prompt&character.Gender=Female&scene.Lighting=Volumetric&camera.Shot%20Type=Cinematic%20Close-Up&formats=true"
 ```
 Returns narrative, technical, poetic, bulleted, and raw prompt strings along with character safety metrics.
+
+### 4. Media Studio Data Endpoints
+```bash
+# Fetch curated web resources (table rows as JSON)
+curl -L "https://script.google.com/macros/s/AKfycbyCjig1ociubkgrGw5P814n3aX1pQvzM4N5erySJWTJijL2oQW9ZfBZDUvwohLxHmyjNw/exec?action=resources"
+
+# Fetch artwork registry catalogue
+curl -L "https://script.google.com/macros/s/AKfycbyCjig1ociubkgrGw5P814n3aX1pQvzM4N5erySJWTJijL2oQW9ZfBZDUvwohLxHmyjNw/exec?action=artwork"
+
+# Fetch active production schedule queue
+curl -L "https://script.google.com/macros/s/AKfycbyCjig1ociubkgrGw5P814n3aX1pQvzM4N5erySJWTJijL2oQW9ZfBZDUvwohLxHmyjNw/exec?action=queue"
+
+# Fetch NotebookLM synchronization records
+curl -L "https://script.google.com/macros/s/AKfycbyCjig1ociubkgrGw5P814n3aX1pQvzM4N5erySJWTJijL2oQW9ZfBZDUvwohLxHmyjNw/exec?action=notebooklm"
+
+# Master setup trigger (Initializes all 4 tabs via Web App)
+curl -L "https://script.google.com/macros/s/AKfycbyCjig1ociubkgrGw5P814n3aX1pQvzM4N5erySJWTJijL2oQW9ZfBZDUvwohLxHmyjNw/exec?action=setup_media_studio"
+
+# Trigger background Drive indexing
+curl -L "https://script.google.com/macros/s/AKfycbyCjig1ociubkgrGw5P814n3aX1pQvzM4N5erySJWTJijL2oQW9ZfBZDUvwohLxHmyjNw/exec?action=sync_drive_artwork"
+```
 
 ---
 

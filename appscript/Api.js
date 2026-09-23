@@ -75,12 +75,58 @@ function apiHandle_(e, method) {
         return apiJson_({ ok: true, action: 'set_webhook', data: setDiscordWebhookUrl(req.webhookUrl || (e && e.parameter && e.parameter.url)) });
       case 'apply_selections':
         return apiJson_({ ok: true, action: 'apply_selections', data: applyDashboardSelectionsToSheet(req.selections || {}) });
+      case 'setup_media_studio':
+        return apiJson_({ ok: true, action: 'setup_media_studio', data: setupAllMediaStudioSheets() });
+      case 'web_resources':
+      case 'resources':
+        return apiJson_({ ok: true, action: 'web_resources', data: apiGetTableData_(MEDIA_STUDIO_CONFIG.TABS.WEB_RESOURCES) });
+      case 'artwork_registry':
+      case 'artwork':
+        return apiJson_({ ok: true, action: 'artwork_registry', data: apiGetTableData_(MEDIA_STUDIO_CONFIG.TABS.ARTWORK_REGISTRY) });
+      case 'production_queue':
+      case 'queue':
+        return apiJson_({ ok: true, action: 'production_queue', data: apiGetTableData_(MEDIA_STUDIO_CONFIG.TABS.PRODUCTION_QUEUE) });
+      case 'notebooklm_sync':
+      case 'notebooklm':
+        return apiJson_({ ok: true, action: 'notebooklm_sync', data: apiGetTableData_(MEDIA_STUDIO_CONFIG.TABS.NOTEBOOKLM_SYNC) });
+      case 'sync_drive_artwork':
+        return apiJson_({ ok: true, action: 'sync_drive_artwork', data: syncDriveArtworkIndex() });
       default:
-        return apiJson_({ ok: false, action: req.action, error: 'Unknown action. Use health | categories | prompt | setup_sheet | inspect_sheets | inspect_tab | migrate_to_columnar | archive_old_log | clean_tab_bar | clean_tab_bar_focus | unhide_all_tabs | clear_selections | presets | apply_preset | send_webhook | get_webhook | set_webhook | apply_selections' });
+        return apiJson_({ ok: false, action: req.action, error: 'Unknown action. Use health | categories | prompt | setup_sheet | inspect_sheets | inspect_tab | migrate_to_columnar | archive_old_log | clean_tab_bar | clean_tab_bar_focus | unhide_all_tabs | clear_selections | presets | apply_preset | send_webhook | get_webhook | set_webhook | apply_selections | setup_media_studio | resources | artwork | queue | notebooklm | sync_drive_artwork' });
     }
   } catch (error) {
     logError('apiHandle_', error);
     return apiJson_({ ok: false, error: error.message });
+  }
+}
+
+/**
+ * 📊 Generic table reader helper for Media Studio tabs.
+ */
+function apiGetTableData_(tabName) {
+  try {
+    const ss = SpreadsheetApp.getActiveSpreadsheet();
+    const sheet = ss.getSheetByName(tabName);
+    if (!sheet) return { exists: false, count: 0, items: [] };
+    const lastRow = sheet.getLastRow();
+    const lastCol = sheet.getLastColumn();
+    if (lastRow < 2 || lastCol < 1) {
+      const headers = sheet.getRange(1, 1, 1, Math.max(lastCol, 1)).getValues()[0] || [];
+      return { exists: true, count: 0, headers: headers, items: [] };
+    }
+    
+    const headers = sheet.getRange(1, 1, 1, lastCol).getValues()[0];
+    const data = sheet.getRange(2, 1, lastRow - 1, lastCol).getValues();
+    const objects = data.map(function(row) {
+      const obj = {};
+      headers.forEach(function(h, idx) {
+        if (h) obj[h] = row[idx];
+      });
+      return obj;
+    });
+    return { exists: true, count: objects.length, headers: headers, items: objects };
+  } catch (err) {
+    return { exists: false, error: err.message };
   }
 }
 
